@@ -1229,7 +1229,8 @@ static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
    if (!entry || string_is_empty(entry->path))
       return false;
 
-   strlcpy(path, entry->path, sizeof(path));
+   //strlcpy(path, entry->path, sizeof(path));
+   path_resolve_to_local_file_system(path, entry->path);   
    playlist_resolve_path(PLAYLIST_LOAD, path, sizeof(path));
 
    if (!string_is_empty(path))

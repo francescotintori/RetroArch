@@ -618,6 +618,125 @@ bool path_is_absolute(const char *path)
    return false;
 }
 
+bool is_posix_path(const char* path)
+{
+   if (strstr(path, "/"))
+      return true;
+
+   return false;
+}
+
+bool using_posix_path_syntax()
+{
+   char path[PATH_MAX_LENGTH];
+
+#ifdef WINDOWS
+   GetCurrentDirectory(PATH_MAX_LENGTH, path);
+#else
+   getcwd(current_dir, PATH_MAX_LENGTH);
+#endif 
+
+   if (path[0] == '/')
+      return true;
+
+   return false;
+}
+
+bool is_windows_path(const char* path)
+{
+   if (strstr(path, "/"))
+      return false;
+
+   return true;
+}
+
+bool using_windows_path_syntax()
+{
+   char path[PATH_MAX_LENGTH];
+
+#ifdef WINDOWS
+   GetCurrentDirectory(PATH_MAX_LENGTH, path);
+#else
+   getcwd(current_dir, PATH_MAX_LENGTH);
+#endif 
+
+   if (strstr(path, ":\\"))
+      return true;
+
+   return false;
+}
+
+/**
+ * path_resolve_to_local_file_system:
+ * @buf                : output buffer
+ * @path               : original path
+ *
+ * Resolves @path to local file system, switching '\' with '/' if needed (and viceversa)
+ * Also appends @path to configuration parameter 'base_content_directory' if defined
+ *
+ * Example[1]
+ *  @path = 'roms\zelda3.zip'
+ *  base_content_directory = '/retroarch/'
+ *
+ *  Under linux/android returns '/retroarch/roms/zelda3.zip'
+ *
+ * Example[2]
+ *  @path = 'roms\zelda3.zip'
+ *  base_content_directory = 'c:\games\retroarch\'
+ *
+ *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
+ *
+ * Example[3]
+ *  @path = 'roms/zelda3.zip'
+ *  base_content_directory = 'c:\games\retroarch\'
+ *
+ *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
+ **/
+void path_resolve_to_local_file_system(char* buf, const char* path)
+{
+   strcpy(buf, path);
+
+   // if no base content path is defined, we can't convert a relative path to absolute
+   settings_t* settings = config_get_ptr();
+   if (string_is_empty(settings->paths.base_content_directory))
+      return;
+
+   // if path is already absolute, we cant do anything to try and fix it
+   if (path_is_absolute(path))
+      return;
+
+   // if using a posix file path under a posix fs and the file exists we keep it
+   if (is_posix_path(path) && using_posix_path_syntax() && path_is_valid(path))
+      return;
+
+   char tmp[PATH_MAX_LENGTH];
+   strcpy(tmp, path);
+
+   // if using a windows path under *nix, we replace \ with /, even if \ is allowed
+   if (using_posix_path_syntax() && is_windows_path(path))
+   {
+      string_replace_all_chars(tmp, '\\', '/');
+   }
+   else
+   {
+      // if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best..
+      if (using_windows_path_syntax() && is_posix_path(path))
+      {
+         string_replace_all_chars(tmp, '/', '\\');
+      }
+      else
+      {
+         // alien file system..
+         return;
+      }
+   }
+
+   strcpy(buf, settings->paths.base_content_directory);
+   strcat(buf, tmp);
+
+   RARCH_LOG("Path '%s' resolved to '%s'\n", path, buf);
+}
+
 /**
  * path_resolve_realpath:
  * @buf                : input and output buffer for path

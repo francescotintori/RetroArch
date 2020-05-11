@@ -1204,10 +1204,12 @@ static char subsystem_path[PATH_MAX_LENGTH]             = {0};
 static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
 static char path_main_basename[8192]                    = {0};
 static char path_content[PATH_MAX_LENGTH]               = {0};
+static char path_content_absolute[PATH_MAX_LENGTH]      = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
 static char path_config_append_file[PATH_MAX_LENGTH]    = {0};
 static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
+static char base_content_directory[PATH_MAX_LENGTH]      = {0};
 
 static struct rarch_dir_list dir_shader_list;
 
@@ -2072,6 +2074,9 @@ const char *path_get(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
+
+      //case RARCH_PATH_BASECONTENT:
+      //   return NULL;
    }
 
    return NULL;
@@ -2167,9 +2172,17 @@ bool path_set(enum rarch_path_type type, const char *path)
                sizeof(path_core_options_file));
          break;
       case RARCH_PATH_CONTENT:
-         strlcpy(path_content, path,
+         if (strcmp(path, path_content_absolute) != 0)
+         {
+            strlcpy(path_content, path,
                sizeof(path_content));
+               path_resolve_to_local_file_system(path_content_absolute, path);
+         }
          break;
+/*      case RARCH_PATH_BASECONTENT:
+         strlcpy(base_content_directory, path,
+            sizeof(base_content_directory));
+         break;   */      
       case RARCH_PATH_NONE:
          break;
    }
@@ -2236,6 +2249,7 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_CONTENT:
          *path_content = '\0';
+         *path_content_absolute = '\0';
          break;
       case RARCH_PATH_BASENAME:
          *path_main_basename = '\0';
@@ -11626,7 +11640,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
             if (string_is_empty(dir_system) || systemfiles_in_content_dir)
             {
-               const char *fullpath = path_get(RARCH_PATH_CONTENT);
+               const char *fullpath = path_get(RARCH_PATH_CONTENT/*_ABSOLUTE*/);
                if (!string_is_empty(fullpath))
                {
                   size_t path_size = PATH_MAX_LENGTH * sizeof(char);
@@ -27888,7 +27902,7 @@ bool retroarch_main_init(int argc, char *argv[])
    retroarch_init_task_queue();
 
    {
-      const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
+      const char    *fullpath  = path_get(RARCH_PATH_CONTENT/*_ABSOLUTE*/);
 
       if (!string_is_empty(fullpath))
       {

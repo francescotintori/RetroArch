@@ -776,11 +776,14 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    if (!core_info_list)
       return;
 
-   p_coreinfo->tmp_path          = path;
+   char resolvedpath[PATH_MAX_LENGTH];
+   path_resolve_to_local_file_system(resolvedpath, path);
+
+   p_coreinfo->tmp_path          = resolvedpath;
 
 #ifdef HAVE_COMPRESSION
-   if (path_is_compressed_file(path))
-      list = file_archive_get_file_list(path, NULL);
+   if (path_is_compressed_file(resolvedpath))
+      list = file_archive_get_file_list(resolvedpath, NULL);
    p_coreinfo->tmp_list = list;
 #endif
 
@@ -793,7 +796,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    {
       const core_info_t *core = &core_info_list->list[i];
 
-      if (core_info_does_support_file(core, path))
+      if (core_info_does_support_file(core, resolvedpath))
          continue;
 
 #ifdef HAVE_COMPRESSION
