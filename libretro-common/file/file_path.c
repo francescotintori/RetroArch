@@ -629,15 +629,6 @@ bool path_is_absolute(const char *path)
    return false;
 }
 
-void get_current_directory(char* buf, int size)
-{
-#ifdef _WIN32
-   GetCurrentDirectory(size, buf);
-#else
-   getcwd(buf, size);
-#endif 
-}
-
 bool is_posix_path(const char* path)
 {
    if (strchr(path, posix_path_delimiter))
@@ -646,28 +637,12 @@ bool is_posix_path(const char* path)
    return false;
 }
 
-bool using_posix_path_syntax()
-{
-   char path[PATH_MAX_LENGTH];
-   get_current_directory(path, PATH_MAX_LENGTH);
-
-   return is_posix_path(path);
-}
-
 bool is_windows_path(const char* path)
 {
    if (strchr(path, posix_path_delimiter))
       return false;
 
    return true;
-}
-
-bool using_windows_path_syntax()
-{
-   char path[PATH_MAX_LENGTH];
-   get_current_directory(path, PATH_MAX_LENGTH);
-
-   return is_windows_path(path);
 }
 
 /**
@@ -709,26 +684,23 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
    if (path_is_absolute(path))
       return;
 
-   // if using a posix file path under a posix fs and the file exists we keep it
-   if (is_posix_path(path) && using_posix_path_syntax() && path_is_valid(path))
-      return;
-
    char tmp[PATH_MAX_LENGTH];
    strcpy(tmp, path);
 
-   // if using a windows path under *nix, we replace \ with /, even if \ is allowed
-   if (using_posix_path_syntax() && is_windows_path(path))
+#ifdef using_windows_file_system
+   // if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best..
+   if (is_posix_path(path))
+   {
+      string_replace_all_chars(tmp, posix_path_delimiter, windows_path_delimiter);
+   }
+#endif
+
+#ifdef using_posix_file_system
+   if (is_windows_path(path))
    {
       string_replace_all_chars(tmp, windows_path_delimiter, posix_path_delimiter);
    }
-   else
-   {
-      // if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best..
-      if (using_windows_path_syntax() && is_posix_path(path))
-      {
-         string_replace_all_chars(tmp, posix_path_delimiter, windows_path_delimiter);
-      }
-   }
+#endif
 
    strcpy(buf, settings->paths.directory_menu_content);
 
