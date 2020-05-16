@@ -618,6 +618,42 @@ bool path_is_absolute(const char *path)
    return false;
 }
 
+void get_current_directory(char* buf, int size)
+{
+#ifdef _WIN32
+   GetCurrentDirectory(size, buf);
+#else
+   getcwd(buf, size);
+#endif 
+}
+
+static char* local_file_system_folder_delimeter = NULL;
+
+char get_path_folder_delimiter()
+{
+#ifdef _WIN32
+   return '\\';
+#else
+   return '/';
+#endif 
+}
+
+char *get_local_file_system_folder_delimeter()
+{
+   if (local_file_system_folder_delimeter == NULL)
+   {
+#ifdef _WIN32
+      local_file_system_folder_delimeter = (char*)malloc(2);
+      strcpy(local_file_system_folder_delimeter, "\\");
+#else
+      local_file_system_folder_delimeter = (char*)malloc(2);
+      strcpy(local_file_system_folder_delimeter, "/");
+#endif
+   }
+
+   return local_file_system_folder_delimeter;
+}
+
 bool is_posix_path(const char* path)
 {
    if (strstr(path, "/"))
@@ -629,14 +665,9 @@ bool is_posix_path(const char* path)
 bool using_posix_path_syntax()
 {
    char path[PATH_MAX_LENGTH];
+   get_current_directory(path, PATH_MAX_LENGTH);
 
-#ifdef WINDOWS
-   GetCurrentDirectory(PATH_MAX_LENGTH, path);
-#else
-   getcwd(current_dir, PATH_MAX_LENGTH);
-#endif 
-
-   if (path[0] == '/')
+   if (strstr(path, "/"))
       return true;
 
    return false;
@@ -653,12 +684,7 @@ bool is_windows_path(const char* path)
 bool using_windows_path_syntax()
 {
    char path[PATH_MAX_LENGTH];
-
-#ifdef WINDOWS
-   GetCurrentDirectory(PATH_MAX_LENGTH, path);
-#else
-   getcwd(current_dir, PATH_MAX_LENGTH);
-#endif 
+   get_current_directory(path, PATH_MAX_LENGTH);
 
    if (strstr(path, ":\\"))
       return true;
@@ -696,9 +722,9 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
 {
    strcpy(buf, path);
 
-   // if no base content path is defined, we can't convert a relative path to absolute
+   // if relative paths save is disabled, or no directory_menu_content path is defined, we abort
    settings_t* settings = config_get_ptr();
-   if (string_is_empty(settings->paths.base_content_directory))
+   if (!settings->bools.playlist_save_relative_paths || string_is_empty(settings->paths.directory_menu_content))
       return;
 
    // if path is already absolute, we cant do anything to try and fix it
@@ -724,14 +750,12 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
       {
          string_replace_all_chars(tmp, '/', '\\');
       }
-      else
-      {
-         // alien file system..
-         return;
-      }
    }
 
-   strcpy(buf, settings->paths.base_content_directory);
+   char* folder_delimeter = get_local_file_system_folder_delimeter();
+   strcpy(buf, settings->paths.directory_menu_content);
+   if (buf[strlen(buf) - 1] != folder_delimeter && tmp[0] != folder_delimeter)
+      strcat(buf, folder_delimeter);
    strcat(buf, tmp);
 
    RARCH_LOG("Path '%s' resolved to '%s'\n", path, buf);
