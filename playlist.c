@@ -852,11 +852,6 @@ bool playlist_push(playlist_t *playlist,
       struct playlist_entry tmp;
       const char *entry_path = playlist->entries[i].path;
       const char* entry_relative_path = playlist->entries[i].relative_path;
-      //bool equal_path        =
-      //   (string_is_empty(real_path) && string_is_empty(entry_path) && string_is_empty(entry_relative_path)) ||
-      //   playlist_path_equal(real_path, entry_path, fuzzy_archive_match) ||
-      //   (strcmp(relative_path, entry_relative_path) == 0);
-
       bool equal_path =
          (!string_is_empty(real_path) && !string_is_empty(entry_path) && playlist_path_equal(real_path, entry_path, fuzzy_archive_match)) ||
          (!string_is_empty(relative_path) && !string_is_empty(entry_relative_path) && (strcmp(relative_path, entry_relative_path) == 0));
@@ -1536,7 +1531,7 @@ void playlist_write_file(
          json_write_new_line(context.writer);
          json_write_space(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "path",
-            STRLEN_CONST("path"), JSON_UTF8);
+               STRLEN_CONST("path"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          json_write_space(context.writer, 1);
          JSON_Writer_WriteString(context.writer,

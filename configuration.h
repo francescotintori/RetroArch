@@ -732,7 +732,6 @@ typedef struct settings
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
       char streaming_title[PATH_MAX_LENGTH];
-      char base_content_directory[PATH_MAX_LENGTH];
 
       char log_dir[PATH_MAX_LENGTH];
    } paths;

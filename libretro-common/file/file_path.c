@@ -698,7 +698,7 @@ bool using_windows_path_syntax()
  * @path               : original path
  *
  * Resolves @path to local file system, switching '\' with '/' if needed (and viceversa)
- * Also appends @path to configuration parameter 'base_content_directory' if defined
+ * Also appends @path to configuration parameter 'directory_menu_content' if defined
  *
  * Example[1]
  *  @path = 'roms\zelda3.zip'

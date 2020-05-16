@@ -1204,7 +1204,6 @@ static char subsystem_path[PATH_MAX_LENGTH]             = {0};
 static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
 static char path_main_basename[8192]                    = {0};
 static char path_content[PATH_MAX_LENGTH]               = {0};
-static char path_content_absolute[PATH_MAX_LENGTH]      = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
 static char path_config_append_file[PATH_MAX_LENGTH]    = {0};
@@ -2170,7 +2169,7 @@ bool path_set(enum rarch_path_type type, const char *path)
          break;
       case RARCH_PATH_CONTENT:
          strlcpy(path_content, path,
-            sizeof(path_content));
+               sizeof(path_content));
          break;
       case RARCH_PATH_NONE:
          break;
@@ -2238,7 +2237,6 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_CONTENT:
          *path_content = '\0';
-         *path_content_absolute = '\0';
          break;
       case RARCH_PATH_BASENAME:
          *path_main_basename = '\0';

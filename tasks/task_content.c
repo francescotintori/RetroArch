@@ -807,7 +807,6 @@ static bool content_file_init_extract(
    {
       bool block_extract                 = content->elems[i].attr.i & 1;
       const char *path                   = content->elems[i].data;
-
       bool contains_compressed           = path_contains_compressed_file(path);
 
       /* Block extract check. */
