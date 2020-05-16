@@ -112,6 +112,17 @@
 
 #endif
 
+#define windows_path_delimiter '\\'
+#define posix_path_delimiter '/'
+
+#ifdef _WIN32
+#define local_file_system_path_delimeter windows_path_delimiter
+#define using_windows_file_system
+#else
+#define local_file_system_path_delimeter posix_path_delimiter
+#define using_posix_file_system
+#endif
+
 /**
  * path_get_archive_delim:
  * @path               : path
@@ -627,36 +638,9 @@ void get_current_directory(char* buf, int size)
 #endif 
 }
 
-static char* local_file_system_folder_delimeter = NULL;
-
-char get_path_folder_delimiter()
-{
-#ifdef _WIN32
-   return '\\';
-#else
-   return '/';
-#endif 
-}
-
-char *get_local_file_system_folder_delimeter()
-{
-   if (local_file_system_folder_delimeter == NULL)
-   {
-#ifdef _WIN32
-      local_file_system_folder_delimeter = (char*)malloc(2);
-      strcpy(local_file_system_folder_delimeter, "\\");
-#else
-      local_file_system_folder_delimeter = (char*)malloc(2);
-      strcpy(local_file_system_folder_delimeter, "/");
-#endif
-   }
-
-   return local_file_system_folder_delimeter;
-}
-
 bool is_posix_path(const char* path)
 {
-   if (strstr(path, "/"))
+   if (strchr(path, posix_path_delimiter))
       return true;
 
    return false;
@@ -667,15 +651,12 @@ bool using_posix_path_syntax()
    char path[PATH_MAX_LENGTH];
    get_current_directory(path, PATH_MAX_LENGTH);
 
-   if (strstr(path, "/"))
-      return true;
-
-   return false;
+   return is_posix_path(path);
 }
 
 bool is_windows_path(const char* path)
 {
-   if (strstr(path, "/"))
+   if (strchr(path, posix_path_delimiter))
       return false;
 
    return true;
@@ -686,10 +667,7 @@ bool using_windows_path_syntax()
    char path[PATH_MAX_LENGTH];
    get_current_directory(path, PATH_MAX_LENGTH);
 
-   if (strstr(path, ":\\"))
-      return true;
-
-   return false;
+   return is_windows_path(path);
 }
 
 /**
@@ -741,21 +719,22 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
    // if using a windows path under *nix, we replace \ with /, even if \ is allowed
    if (using_posix_path_syntax() && is_windows_path(path))
    {
-      string_replace_all_chars(tmp, '\\', '/');
+      string_replace_all_chars(tmp, windows_path_delimiter, posix_path_delimiter);
    }
    else
    {
       // if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best..
       if (using_windows_path_syntax() && is_posix_path(path))
       {
-         string_replace_all_chars(tmp, '/', '\\');
+         string_replace_all_chars(tmp, posix_path_delimiter, windows_path_delimiter);
       }
    }
 
-   char* folder_delimeter = get_local_file_system_folder_delimeter();
    strcpy(buf, settings->paths.directory_menu_content);
-   if (buf[strlen(buf) - 1] != folder_delimeter && tmp[0] != folder_delimeter)
-      strcat(buf, folder_delimeter);
+
+   char fs_delimeter = local_file_system_path_delimeter;
+   if (buf[strlen(buf) - 1] != fs_delimeter && tmp[0] != fs_delimeter)
+      strncat(buf, &fs_delimeter, 1);
    strcat(buf, tmp);
 
    RARCH_LOG("Path '%s' resolved to '%s'\n", path, buf);
