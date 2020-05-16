@@ -2169,12 +2169,8 @@ bool path_set(enum rarch_path_type type, const char *path)
                sizeof(path_core_options_file));
          break;
       case RARCH_PATH_CONTENT:
-         if (strcmp(path, path_content_absolute) != 0)
-         {
-            strlcpy(path_content, path,
-               sizeof(path_content));
-               path_resolve_to_local_file_system(path_content_absolute, path);
-         }
+         strlcpy(path_content, path,
+            sizeof(path_content));
          break;
       case RARCH_PATH_NONE:
          break;
