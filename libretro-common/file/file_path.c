@@ -655,19 +655,19 @@ bool is_windows_path(const char* path)
  *
  * Example[1]
  *  @path = 'roms\zelda3.zip'
- *  base_content_directory = '/retroarch/'
+ *  directory_menu_content = '/retroarch/'
  *
  *  Under linux/android returns '/retroarch/roms/zelda3.zip'
  *
  * Example[2]
  *  @path = 'roms\zelda3.zip'
- *  base_content_directory = 'c:\games\retroarch\'
+ *  directory_menu_content = 'c:\games\retroarch\'
  *
  *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
  *
  * Example[3]
  *  @path = 'roms/zelda3.zip'
- *  base_content_directory = 'c:\games\retroarch\'
+ *  directory_menu_content = 'c:\games\retroarch\'
  *
  *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
  **/

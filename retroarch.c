@@ -1208,7 +1208,6 @@ static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
 static char path_config_append_file[PATH_MAX_LENGTH]    = {0};
 static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
-static char base_content_directory[PATH_MAX_LENGTH]     = {0};
 
 static struct rarch_dir_list dir_shader_list;
 
