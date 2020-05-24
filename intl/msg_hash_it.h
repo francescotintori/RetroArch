@@ -3179,6 +3179,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Elimina scaletta"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Salva percorsi relativi nelle playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Se attivato, i percorsi salvati nelle playlist sono relativi alla cartella 'File Browser'"
+   )
 
 /* Settings > User */
 
