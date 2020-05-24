@@ -30,6 +30,7 @@
 #include "list_special.h"
 #include "core_info.h"
 #include "file_path_special.h"
+#include "configuration.h"
 
 #include "frontend/frontend_driver.h"
 

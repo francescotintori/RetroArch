@@ -2705,11 +2705,12 @@ playlist_t *playlist_init(const char *path, size_t size, const char* base_conten
 
          if (entry->subsystem_roms_relative_paths && entry->subsystem_roms_relative_paths->size > 0)
          {
+            struct string_list* subsystem_roms_relative_paths = entry->subsystem_roms_relative_paths;
+
             if (entry->subsystem_roms)
                string_list_free(entry->subsystem_roms);
             entry->subsystem_roms = string_list_new();
 
-            struct string_list* subsystem_roms_relative_paths = entry->subsystem_roms_relative_paths;
             for (j = 0; j < subsystem_roms_relative_paths->size; j++)
             {
                tmp_entry_path[0] = '\0';
