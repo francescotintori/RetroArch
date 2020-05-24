@@ -517,8 +517,8 @@ static const bool menu_show_sublabels          = true;
 
 static const bool menu_scroll_fast             = false;
 
-#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_BOUNCE)
-static const float menu_ticker_speed           = 1.0f;
+#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_LOOP)
+static const float menu_ticker_speed           = 2.0f;
 
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
@@ -539,11 +539,15 @@ static const bool content_show_music        = true;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static const bool content_show_video        = true;
 #endif
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING)
+#if defined(_3DS)
+static const bool content_show_netplay      = false;
+#else
 static const bool content_show_netplay      = true;
 #endif
+#endif
 static const bool content_show_history      = true;
-static const bool content_show_add     	  = true;
+static const bool content_show_add     	    = true;
 static const bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
@@ -610,7 +614,7 @@ static const bool rgui_extended_ascii = false;
 static const bool default_game_specific_options = true;
 static const bool default_auto_overrides_enable = true;
 static const bool default_auto_remaps_enable = true;
-static const bool default_global_core_options = true;
+static const bool default_global_core_options = false;
 static const bool default_auto_shaders_enable = true;
 
 static const bool default_sort_savefiles_enable = false;
@@ -917,7 +921,11 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save (srm) files, compress
  * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_SAVE_FILE_COMPRESSION true
+#else
 #define DEFAULT_SAVE_FILE_COMPRESSION false
+#endif
 
 /* When creating save state files, compress
  * written data */
@@ -968,7 +976,11 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
 
 /* When creating/updating playlists, compress written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_PLAYLIST_COMPRESSION true
+#else
 #define DEFAULT_PLAYLIST_COMPRESSION false
+#endif
 
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */

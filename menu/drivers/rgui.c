@@ -34,7 +34,6 @@
 
 #include <retro_inline.h>
 #include <gfx/scaler/scaler.h>
-#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -1621,22 +1620,29 @@ static void rgui_render_particle_effect(rgui_t *rgui)
 static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
 {
    unsigned x, y;
-
-   /* Note: Ugly hacks required for the Wii, since GEKKO
-    * platforms only support a 16:9 framebuffer width of
-    * 424 instead of the usual 426... */
+   unsigned x_crop_offset;
+   unsigned y_crop_offset;
 
    /* Sanity check */
    if (!image->pixels ||
-#if defined(GEKKO)
-       (image->width != ((rgui_background_buf.width == 424) ?
-            (rgui_background_buf.width + 2) : rgui_background_buf.width)) ||
-#else
-       (image->width != rgui_background_buf.width) ||
-#endif
-       (image->height != rgui_background_buf.height) ||
+       (image->width  < rgui_background_buf.width)  ||
+       (image->height < rgui_background_buf.height) ||
        !rgui_background_buf.data)
       return;
+
+   /* In most cases, image size will be identical
+    * to wallpaper buffer size - but wallpaper buffer
+    * will be smaller than expected if:
+    * - This is a GEKKO platform (these only support
+    *   a 16:9 framebuffer width of 424 instead of
+    *   the usual 426...)
+    * - The current display resolution is less than
+    *   240p - in which case, the framebuffer will
+    *   scale down to a minimum of 192p
+    * If the wallpaper buffer is undersized, we have
+    * to crop the source image */
+   x_crop_offset = (image->width  - rgui_background_buf.width)  >> 1;
+   y_crop_offset = (image->height - rgui_background_buf.height) >> 1;
 
    /* Copy image to wallpaper buffer, performing pixel format conversion */
    for (x = 0; x < rgui_background_buf.width; x++)
@@ -1644,13 +1650,9 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
       for (y = 0; y < rgui_background_buf.height; y++)
       {
          rgui_background_buf.data[x + (y * rgui_background_buf.width)] =
-#if defined(GEKKO)
-            argb32_to_pixel_platform_format(image->pixels[
-                  x + ((rgui_background_buf.width == 424) ? 1 : 0) +
-                  (y * image->width)]);
-#else
-            argb32_to_pixel_platform_format(image->pixels[x + (y * rgui_background_buf.width)]);
-#endif
+               argb32_to_pixel_platform_format(image->pixels[
+                     (x + x_crop_offset) +
+                     ((y + y_crop_offset) * image->width)]);
       }
    }
 
@@ -2201,7 +2203,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    unsigned shadow_color       = 0;
    unsigned particle_color     = 0;
    config_file_t *conf         = NULL;
-   char *wallpaper_key         = NULL;
+   const char *wallpaper_key   = NULL;
    settings_t *settings        = config_get_ptr();
    bool success                = false;
    unsigned rgui_aspect_ratio  = settings->uints.menu_rgui_aspect_ratio;
@@ -2882,44 +2884,34 @@ static void rgui_blit_cursor(rgui_t *rgui)
    }
 }
 
-int rgui_osk_ptr_at_pos(void *data, int x, int y,
+static int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
 {
    /* This is a lazy copy/paste from rgui_render_osk(),
     * but it will do for now... */
-   size_t fb_pitch;
+   size_t fb_pitch, key_index;
    unsigned fb_width, fb_height;
-   size_t key_index;
    
-   unsigned key_width, key_height;
-   unsigned key_text_offset_x, key_text_offset_y;
-   unsigned ptr_width, ptr_height;
-   unsigned ptr_offset_x, ptr_offset_y;
-   
-   unsigned keyboard_width, keyboard_height;
-   unsigned keyboard_offset_x, keyboard_offset_y;
-   
-   unsigned osk_width, osk_height;
    unsigned osk_x, osk_y;
+   unsigned key_text_offset_x  = 8;
+   unsigned key_text_offset_y  = 6;
+   unsigned ptr_offset_x       = 2;
+   unsigned ptr_offset_y       = 2;
+   unsigned keyboard_offset_x  = 10;
+   unsigned key_width          = FONT_WIDTH  + (key_text_offset_x * 2);
+   unsigned key_height         = FONT_HEIGHT + (key_text_offset_y * 2);
+   unsigned ptr_width          = key_width  - (ptr_offset_x * 2);
+   unsigned ptr_height         = key_height - (ptr_offset_y * 2);
+   unsigned keyboard_width     = key_width  * OSK_CHARS_PER_LINE;
+   unsigned keyboard_height    = key_height * 4;
+   unsigned keyboard_offset_y  = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
+   unsigned osk_width          = keyboard_width + 20;
+   unsigned osk_height         = keyboard_offset_y + keyboard_height + 10;
 
    /* Get dimensions/layout */
    gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
-   key_text_offset_x      = 8;
-   key_text_offset_y      = 6;
-   key_width              = FONT_WIDTH  + (key_text_offset_x * 2);
-   key_height             = FONT_HEIGHT + (key_text_offset_y * 2);
-   ptr_offset_x           = 2;
-   ptr_offset_y           = 2;
-   ptr_width              = key_width  - (ptr_offset_x * 2);
-   ptr_height             = key_height - (ptr_offset_y * 2);
-   keyboard_width         = key_width  * OSK_CHARS_PER_LINE;
-   keyboard_height        = key_height * 4;
-   keyboard_offset_x      = 10;
-   keyboard_offset_y      = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
-   osk_width              = keyboard_width + 20;
-   osk_height             = keyboard_offset_y + keyboard_height + 10;
-   osk_x                  = (fb_width - osk_width) / 2;
+   osk_x                  = (fb_width  - osk_width)  / 2;
    osk_y                  = (fb_height - osk_height) / 2;
 
    for (key_index = 0; key_index < 44; key_index++)
@@ -2927,8 +2919,8 @@ int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned key_row     = (unsigned)(key_index / OSK_CHARS_PER_LINE);
       unsigned key_column  = (unsigned)(key_index - (key_row * OSK_CHARS_PER_LINE));
 
-      unsigned osk_ptr_x = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
-      unsigned osk_ptr_y = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
+      unsigned osk_ptr_x   = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
+      unsigned osk_ptr_y   = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
 
       if (x > osk_ptr_x && x < osk_ptr_x + ptr_width &&
           y > osk_ptr_y && y < osk_ptr_y + ptr_height)
@@ -4078,7 +4070,16 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
             do_integer_scaling = false;
       }
       
-      if (!do_integer_scaling)
+      /* Check whether menu should be stretched to
+       * fill the screen, regardless of internal
+       * aspect ratio */
+      if (aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN)
+      {
+         rgui->menu_video_settings.viewport.width  = vp.full_width;
+         rgui->menu_video_settings.viewport.height = vp.full_height;
+      }
+      /* Normal non-integer aspect-ratio-correct scaling */
+      else if (!do_integer_scaling)
       {
          float display_aspect_ratio = (float)vp.full_width 
             / (float)vp.full_height;
@@ -4759,7 +4760,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       {
          /* Schedule a delayed load */
          rgui->thumbnail_load_pending      = true;
-         rgui->thumbnail_load_trigger_time = cpu_features_get_time_usec();
+         rgui->thumbnail_load_trigger_time = menu_driver_get_current_time();
       }
    }
 }
@@ -5282,7 +5283,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
        * Note: Delay is increased when viewing fullscreen thumbnails,
        * since the flicker when switching between playlist view and
        * fullscreen thumbnail view is incredibly jarring...) */
-      if ((cpu_features_get_time_usec() - rgui->thumbnail_load_trigger_time) >=
+      if ((menu_driver_get_current_time() - rgui->thumbnail_load_trigger_time) >=
           (settings->uints.menu_rgui_thumbnail_delay * 1000 * (rgui->show_fs_thumbnail ? 1.5f : 1.0f)))
          rgui_load_current_thumbnails(rgui,
                settings->bools.network_on_demand_thumbnails);
@@ -5392,10 +5393,13 @@ static enum menu_action rgui_parse_menu_entry_action(
    switch (action)
    {
       case MENU_ACTION_SCAN:
-         /* 'Scan' command is used to toggle
-          * fullscreen thumbnail view */
-         rgui_toggle_fs_thumbnail(rgui);
-         new_action = MENU_ACTION_NOOP;
+         /* If this is a playlist, 'scan' command is
+          * used to toggle fullscreen thumbnail view */
+         if (rgui->is_playlist)
+         {
+            rgui_toggle_fs_thumbnail(rgui);
+            new_action = MENU_ACTION_NOOP;
+         }
          break;
       default:
          /* In all other cases, pass through input
