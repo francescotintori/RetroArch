@@ -106,6 +106,17 @@
 
 #endif
 
+#define windows_path_delimiter '\\'
+#define posix_path_delimiter '/'
+
+#ifdef _WIN32
+#define local_file_system_path_delimeter windows_path_delimiter
+#define using_windows_file_system
+#else
+#define local_file_system_path_delimeter posix_path_delimiter
+#define using_posix_file_system
+#endif
+
 /**
  * path_get_archive_delim:
  * @path               : path
@@ -643,6 +654,105 @@ bool path_is_absolute(const char *path)
 #endif
 
    return false;
+}
+
+bool is_posix_path(const char* path)
+{
+   if (strchr(path, posix_path_delimiter))
+      return true;
+
+   return false;
+}
+
+bool is_windows_path(const char* path)
+{
+   if (strchr(path, posix_path_delimiter))
+      return false;
+
+   return true;
+}
+
+/**
+ * path_resolve_to_local_file_system:
+ * @buf                    : output buffer
+ * @path                   : original relative path
+ * @base_content_directory : base content directory
+ *
+ * Resolves @path to local file system, switching '\' with '/' if needed (and viceversa)
+ * Appends @path to @base_content_directory
+ *
+ * Example[1]
+ *  @path = 'roms\zelda3.zip'
+ *  @base_content_directory = '/retroarch/'
+ *
+ *  Under linux/android returns '/retroarch/roms/zelda3.zip'
+ *
+ * Example[2]
+ *  @path = 'roms\zelda3.zip'
+ *  @base_content_directory = 'c:\games\retroarch\'
+ *
+ *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
+ *
+ * Example[3]
+ *  @path = 'roms/zelda3.zip'
+ *  @base_content_directory = 'c:\games\retroarch\'
+ *
+ *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
+ **/
+void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory, size_t count)
+{
+   char* tmp = NULL;
+   const char fs_delimeter = local_file_system_path_delimeter;
+
+   strncpy(buf, path, count);
+
+   /* if no base_content_directory path is defined, we abort */
+   if (string_is_empty(base_content_directory))
+      return;
+
+   /* if path is already absolute, we cant do anything to try and fix it */
+   if (path_is_absolute(path))
+      return;
+
+   tmp = (char*)malloc(PATH_MAX_LENGTH);
+   strncpy(tmp, path, count);
+
+#ifdef using_windows_file_system
+   /* if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best.. */
+   if (is_posix_path(path))
+   {
+      string_replace_all_chars(tmp, posix_path_delimiter, windows_path_delimiter);
+   }
+#endif
+
+#ifdef using_posix_file_system
+   if (is_windows_path(path))
+   {
+      string_replace_all_chars(tmp, windows_path_delimiter, posix_path_delimiter);
+   }
+#endif
+
+   strncpy(buf, base_content_directory, count);
+   
+   if (buf[strlen(buf) - 1] != fs_delimeter && *tmp != fs_delimeter)
+      strncat(buf, &fs_delimeter, 1);
+   strncat(buf, tmp, count);
+
+   free(tmp);
+}
+
+void path_build_relative_path(char* buf, const char* path, const char* base_content_directory, size_t count)
+{
+   /* use relative paths if enabled and entry file path is inside the content folder */
+   bool use_relative_path = !string_is_empty(base_content_directory)
+      && (strncmp(path, base_content_directory, strlen(base_content_directory)) == 0);
+
+   if (use_relative_path)
+   {
+      /* build relative path, and convert to unix path syntax */
+      strncpy(buf, path + strlen(base_content_directory) + 1, count);
+      string_replace_all_chars(buf, windows_path_delimiter, posix_path_delimiter);
+   }
 }
 
 /**

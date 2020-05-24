@@ -7682,7 +7682,8 @@ bool command_event(enum event_command cmd, void *data)
                   path_content_history);
             g_defaults.content_history = playlist_init(
                   path_content_history,
-                  content_history_size);
+                  content_history_size,
+                  config_get_base_content_directory_if_enabled());
             playlist_set_sort_mode(
                   g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
 
@@ -7691,7 +7692,8 @@ bool command_event(enum event_command cmd, void *data)
                   path_content_music_history);
             g_defaults.music_history = playlist_init(
                   path_content_music_history,
-                  content_history_size);
+                  content_history_size,
+                  config_get_base_content_directory_if_enabled());
             playlist_set_sort_mode(
                   g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
 
@@ -7701,7 +7703,8 @@ bool command_event(enum event_command cmd, void *data)
                   path_content_video_history);
             g_defaults.video_history = playlist_init(
                   path_content_video_history,
-                  content_history_size);
+                  content_history_size,
+                  config_get_base_content_directory_if_enabled());
             playlist_set_sort_mode(
                   g_defaults.video_history, PLAYLIST_SORT_MODE_OFF);
 #endif
@@ -7712,7 +7715,8 @@ bool command_event(enum event_command cmd, void *data)
                   path_content_image_history);
             g_defaults.image_history = playlist_init(
                   path_content_image_history,
-                  content_history_size);
+                  content_history_size,
+                  config_get_base_content_directory_if_enabled());
             playlist_set_sort_mode(
                   g_defaults.image_history, PLAYLIST_SORT_MODE_OFF);
 #endif
@@ -7870,7 +7874,7 @@ bool command_event(enum event_command cmd, void *data)
 
                   /* Write playlist entry */
                   if (playlist_push(g_defaults.content_favorites, &entry,
-                           playlist_fuzzy_archive_match))
+                           playlist_fuzzy_archive_match, config_get_base_content_directory_if_enabled()))
                   {
                      enum playlist_sort_mode current_sort_mode =
                            playlist_get_sort_mode(g_defaults.content_favorites);
@@ -12451,6 +12455,16 @@ static const void *record_driver_find_handle(int idx)
 const char* config_get_record_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_RECORD_DRIVERS, NULL);
+}
+
+/**
+ * config_get_base_content_directory_if_enabled:
+ *
+ * Returns: value of parameter directory_menu_content, if parameter playlist_save_relative_paths is enabled
+ */
+const char* config_get_base_content_directory_if_enabled(void)
+{
+   return configuration_settings->bools.playlist_save_relative_paths ? configuration_settings->paths.directory_menu_content : NULL;
 }
 
 #if 0
@@ -29266,7 +29280,8 @@ void rarch_favorites_init(void)
          path_content_favorites);
    g_defaults.content_favorites = playlist_init(
          path_content_favorites,
-         (unsigned)content_favorites_size);
+         (unsigned)content_favorites_size,
+         config_get_base_content_directory_if_enabled());
 
    /* Get current per-playlist sort mode */
    current_sort_mode = playlist_get_sort_mode(g_defaults.content_favorites);

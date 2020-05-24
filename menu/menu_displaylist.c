@@ -1149,7 +1149,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    fill_pathname_join(path_playlist, dir_playlist, path_base,
          sizeof(path_playlist));
 
-   playlist = playlist_init(path_playlist, COLLECTION_SIZE);
+   playlist = playlist_init(path_playlist, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
    if (playlist)
       strlcpy(menu->db_playlist_file, path_playlist,
@@ -1763,7 +1763,7 @@ static void menu_displaylist_set_new_playlist(
    }
 
    if (playlist_init_cached(
-         path, playlist_size,
+         path, playlist_size, config_get_base_content_directory_if_enabled(),
          playlist_use_old_format, playlist_compression))
    {
       playlist_t *playlist                      = playlist_get_cached();
@@ -4279,6 +4279,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,        PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,       PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_SAVE_RELATIVE_PATHS,        PARSE_ONLY_BOOL, true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
