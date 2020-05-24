@@ -2656,12 +2656,13 @@ bool playlist_init_cached(
  **/
 playlist_t *playlist_init(const char *path, size_t size, const char* base_content_directory)
 {
-   struct playlist_entry *entries = NULL;
-   playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
-   size_t i                       = 0;
-   size_t j                       = 0;
-   char tmp_entry_path[PATH_MAX_LENGTH];
+   struct playlist_entry *entries         = NULL;
+   playlist_t           *playlist         = (playlist_t*)malloc(sizeof(*playlist));
+   size_t i                               = 0;
+   size_t j                               = 0;
    union string_list_elem_attr attributes = { 0 };
+   bool use_relative_path                 = !string_is_empty(base_content_directory);
+   char tmp_entry_path[PATH_MAX_LENGTH];
 
    if (!playlist)
       return NULL;
@@ -2689,8 +2690,7 @@ playlist_t *playlist_init(const char *path, size_t size, const char* base_conten
 
    playlist_read_file(playlist, path);   
 
-   /* try use relative paths if enabled */
-   bool use_relative_path = !string_is_empty(base_content_directory);
+   /* try use relative paths if enabled */   
    if (use_relative_path)
    {
       for (i = 0; i < playlist-> size; i++)
@@ -2698,6 +2698,8 @@ playlist_t *playlist_init(const char *path, size_t size, const char* base_conten
          struct playlist_entry *entry = &playlist->entries[i];
          if (!string_is_empty(entry->relative_path))
          {
+            if (entry->path)
+               free(entry->path);
             tmp_entry_path[0] = '\0';
             path_resolve_to_local_file_system(tmp_entry_path, entry->relative_path, base_content_directory, PATH_MAX_LENGTH);
             entry->path = strdup(tmp_entry_path);
