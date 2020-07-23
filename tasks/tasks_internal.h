@@ -32,10 +32,10 @@
 #include "../core_updater_list.h"
 #endif
 
-#if defined(HAVE_NETWORKING)
-/* Required for task_push_pl_entry_thumbnail_download() */
 #include "../playlist.h"
-#endif
+
+/* Required for task_push_core_backup() */
+#include "../core_backup.h"
 
 RETRO_BEGIN_DECLS
 
@@ -45,20 +45,6 @@ typedef struct nbio_buf
    unsigned bufsize;
    char *path;
 } nbio_buf_t;
-
-typedef struct autoconfig_params     autoconfig_params_t;
-
-struct autoconfig_params
-{
-   int32_t vid;
-   int32_t pid;
-   unsigned idx;
-   uint32_t max_users;
-   char  *name;
-   char  *autoconfig_directory;
-   bool show_hidden_files;
-};
-
 
 #ifdef HAVE_NETWORKING
 typedef struct
@@ -81,6 +67,8 @@ void *task_push_http_post_transfer_with_user_agent(const char* url, const char* 
 
 task_retriever_info_t *http_task_get_transfer_list(void);
 
+bool task_push_bluetooth_scan(retro_task_callback_t cb);
+
 bool task_push_wifi_scan(retro_task_callback_t cb);
 
 bool task_push_netplay_lan_scan(retro_task_callback_t cb);
@@ -93,12 +81,21 @@ bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb);
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 
 /* Core updater tasks */
+
 void *task_push_get_core_updater_list(
       core_updater_list_t* core_list, bool mute, bool refresh_menu);
+/* Note: If crc is set to 0, crc of local core file
+ * will be calculated automatically */
 void *task_push_core_updater_download(
-      core_updater_list_t* core_list, const char *filename,
-      bool mute, bool check_crc, const char *path_dir_libretro);
-void task_push_update_installed_cores(const char *path_dir_libretro);
+      core_updater_list_t* core_list,
+      const char *filename, uint32_t crc, bool mute,
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets);
+void task_push_update_installed_cores(
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets);
 
 bool task_push_pl_entry_thumbnail_download(
       const char *system,
@@ -109,14 +106,35 @@ bool task_push_pl_entry_thumbnail_download(
 
 #ifdef HAVE_MENU
 bool task_push_pl_thumbnail_download(
-      const char *system, const char *playlist_path,
+      const char *system,
+      const playlist_config_t *playlist_config,
       const char *dir_thumbnails);
 #endif
 
 #endif
 
-bool task_push_pl_manager_reset_cores(const char *playlist_path);
-bool task_push_pl_manager_clean_playlist(const char *playlist_path);
+/* Core backup/restore tasks */
+
+/* Note 1: If crc is set to 0, crc of core_path file will
+ * be calculated automatically
+ * Note 2: If core_display_name is set to NULL, display
+ * name will be determined automatically
+ * > core_display_name *must* be set to a non-empty
+ *   string if task_push_core_backup() is *not* called
+ *   on the main thread */
+void *task_push_core_backup(
+      const char *core_path, const char *core_display_name,
+      uint32_t crc, enum core_backup_mode backup_mode,
+      size_t auto_backup_history_size,
+      const char *dir_core_assets, bool mute);
+/* Note: If 'core_loaded' is true, menu stack should be
+ * flushed if task_push_core_restore() returns true */
+bool task_push_core_restore(const char *backup_path,
+      const char *dir_libretro,
+      bool *core_loaded);
+
+bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config);
+bool task_push_pl_manager_clean_playlist(const playlist_config_t *playlist_config);
 
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
@@ -131,7 +149,9 @@ bool task_push_dbscan(
       retro_task_callback_t cb);
 #endif
 
-bool task_push_manual_content_scan(void);
+bool task_push_manual_content_scan(
+      const playlist_config_t *playlist_config,
+      const char *playlist_directory);
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(
@@ -141,6 +161,8 @@ bool task_push_overlay_load_default(
       bool input_overlay_enable,
       float input_overlay_opacity,
       float input_overlay_scale,
+      float input_overlay_center_x,
+      float input_overlay_center_y,
       void *user_data);
 #endif
 
@@ -184,35 +206,25 @@ void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
 
-bool input_is_autoconfigured(unsigned i);
-
-unsigned input_autoconfigure_get_device_name_index(unsigned i);
-
-void input_autoconfigure_reset(void);
-
-void input_autoconfigure_override_handler(void *data);
-
+/* Autoconfigure tasks */
+extern const char* const input_builtin_autoconfs[];
+void input_autoconfigure_blissbox_override_handler(
+      int vid, int pid, char *device_name, size_t len);
 void input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,
-      unsigned idx,
+      unsigned port,
       unsigned vid,
       unsigned pid);
-
-bool input_autoconfigure_disconnect(unsigned i, const char *ident);
-
-bool input_autoconfigure_get_swap_override(void);
-
-void input_autoconfigure_joypad_reindex_devices(void);
+bool input_autoconfigure_disconnect(
+      unsigned port, const char *name);
 
 void set_save_state_in_background(bool state);
 
 #ifdef HAVE_CDROM
 void task_push_cdrom_dump(const char *drive);
 #endif
-
-extern const char* const input_builtin_autoconfs[];
 
 RETRO_END_DECLS
 

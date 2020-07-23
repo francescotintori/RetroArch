@@ -94,35 +94,6 @@ static void ozone_cursor_animation_cb(void *userdata)
    ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, target);
 }
 
-void ozone_restart_cursor_animation(ozone_handle_t *ozone)
-{
-   gfx_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
-
-   if (!ozone->has_all_assets)
-      return;
-
-   ozone->theme_dynamic.cursor_state = 1;
-   memcpy(ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_0, sizeof(ozone->theme_dynamic.cursor_border));
-   gfx_animation_kill_by_tag(&tag);
-
-   ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_1);
-}
-
-void ozone_draw_text(
-      ozone_handle_t *ozone,
-      const char *str, float x,
-      float y,
-      enum text_alignment text_align,
-      unsigned width, unsigned height, ozone_font_data_t *font_data,
-      uint32_t color,
-      bool draw_outside)
-{
-   gfx_display_draw_text(font_data->font, str, x, y,
-         width, height, color, text_align, 1.0f,
-         false,
-         1.0, draw_outside);
-}
-
 static void ozone_draw_cursor_slice(
       ozone_handle_t *ozone,
       void *userdata,
@@ -256,6 +227,37 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          ozone->theme_dynamic.selection_border);
+}
+
+
+
+void ozone_restart_cursor_animation(ozone_handle_t *ozone)
+{
+   uintptr_t tag = (uintptr_t) &ozone_default_theme;
+
+   if (!ozone->has_all_assets)
+      return;
+
+   ozone->theme_dynamic.cursor_state = 1;
+   memcpy(ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_0, sizeof(ozone->theme_dynamic.cursor_border));
+   gfx_animation_kill_by_tag(&tag);
+
+   ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_1);
+}
+
+void ozone_draw_text(
+      ozone_handle_t *ozone,
+      const char *str, float x,
+      float y,
+      enum text_alignment text_align,
+      unsigned width, unsigned height, ozone_font_data_t *font_data,
+      uint32_t color,
+      bool draw_outside)
+{
+   gfx_display_draw_text(font_data->font, str, x, y,
+         width, height, color, text_align, 1.0f,
+         false,
+         1.0f, draw_outside);
 }
 
 void ozone_draw_cursor(
@@ -516,21 +518,37 @@ void ozone_draw_messagebox(
       const char *message)
 {
    unsigned i, y_position;
-   int x, y, longest = 0, longest_width = 0;
-   struct string_list *list = !string_is_empty(message)
-      ? string_split(message, "\n") : NULL;
-   float scale_factor       = ozone->last_scale_factor;
+   int x, y, longest_width  = 0;
+   int usable_width         = 0;
+   struct string_list *list = NULL;
+   float scale_factor       = 0.0f;
    unsigned width           = video_width;
    unsigned height          = video_height;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
-   if (!list || !ozone || !ozone->fonts.footer.font)
-   {
-      if (list)
-         string_list_free(list);
-      return;
-   }
+   wrapped_message[0] = '\0';
 
-   if (list->elems == 0)
+   /* Sanity check */
+   if (string_is_empty(message) ||
+       !ozone ||
+       !ozone->fonts.footer.font)
+      goto end;
+
+   scale_factor = ozone->last_scale_factor;
+   usable_width = (int)width - (48 * 8 * scale_factor);
+
+   if (usable_width < 1)
+      goto end;
+
+   /* Split message into lines */
+   word_wrap(
+         wrapped_message, message,
+         usable_width / (int)ozone->fonts.footer.glyph_width,
+         true, 0);
+
+   list = string_split(wrapped_message, "\n");
+
+   if (!list || list->elems == 0)
       goto end;
 
    y_position       = height / 2;
@@ -544,13 +562,14 @@ void ozone_draw_messagebox(
    for (i = 0; i < list->size; i++)
    {
       const char *msg  = list->elems[i].data;
-      int len          = (int)utf8len(msg);
 
-      if (len > longest)
+      if (!string_is_empty(msg))
       {
-         longest       = len;
-         longest_width = font_driver_get_message_width(
+         int width = font_driver_get_message_width(
                ozone->fonts.footer.font, msg, (unsigned)strlen(msg), 1);
+
+         longest_width = (width > longest_width) ?
+               width : longest_width;
       }
    }
 
@@ -606,7 +625,8 @@ void ozone_draw_messagebox(
    }
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 void ozone_draw_fullscreen_thumbnails(

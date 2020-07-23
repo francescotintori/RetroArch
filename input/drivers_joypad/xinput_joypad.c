@@ -138,9 +138,28 @@ typedef struct
    bool         connected;
 } xinput_joypad_state;
 
+/* TODO/FIXME - static globals */
 static XINPUT_VIBRATION g_xinput_rumble_states[4];
-
 static xinput_joypad_state g_xinput_states[4];
+
+/* Buttons are provided by XInput as bits of a uint16.
+ * Map from rarch button index (0..10) to a mask to 
+ * bitwise-& the buttons against.
+ * dpad is handled seperately. */
+static const uint16_t button_index_to_bitmap_code[] =  {
+   XINPUT_GAMEPAD_A,
+   XINPUT_GAMEPAD_B,
+   XINPUT_GAMEPAD_X,
+   XINPUT_GAMEPAD_Y,
+   XINPUT_GAMEPAD_LEFT_SHOULDER,
+   XINPUT_GAMEPAD_RIGHT_SHOULDER,
+   XINPUT_GAMEPAD_START,
+   XINPUT_GAMEPAD_BACK,
+   XINPUT_GAMEPAD_LEFT_THUMB,
+   XINPUT_GAMEPAD_RIGHT_THUMB,
+   XINPUT_GAMEPAD_GUIDE
+};
+
 
 static INLINE int pad_index_to_xuser_index(unsigned pad)
 {
@@ -152,42 +171,26 @@ static INLINE int pad_index_to_xuser_index(unsigned pad)
 #endif
 }
 
-/* Generic "XInput" instead of "Xbox 360", because there are
- * some other non-xbox third party PC controllers.
- */
-static const char* const XBOX_CONTROLLER_NAMES[4] =
-{
-   "XInput Controller (User 1)",
-   "XInput Controller (User 2)",
-   "XInput Controller (User 3)",
-   "XInput Controller (User 4)"
-};
+/* Generic 'XInput' instead of 'Xbox 360', because
+ * there are some other non-Xbox third party PC
+ * controllers */
+static const char XBOX_CONTROLLER_NAME[] = "XInput Controller";
 
-static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
+static const char *xinput_joypad_name(unsigned pad)
 {
-   "XBOX One Controller (User 1)",
-   "XBOX One Controller (User 2)",
-   "XBOX One Controller (User 3)",
-   "XBOX One Controller (User 4)"
-};
-
-const char *xinput_joypad_name(unsigned pad)
-{
-   int xuser = pad_index_to_xuser_index(pad);
 #ifdef HAVE_DINPUT
-   /* Use the real controller name for XBOX One controllers since
-      they are slightly different  */
-   if (xuser < 0)
-      return dinput_joypad.name(pad);
-
-   if (strstr(dinput_joypad.name(pad), "Xbox One For Windows"))
-      return XBOX_ONE_CONTROLLER_NAMES[xuser];
-#endif
-
-   if (xuser < 0)
+   /* On platforms with dinput support, we are able
+    * to get a name from the device itself */
+   return dinput_joypad.name(pad);
+#else
+   if (pad_index_to_xuser_index(pad) < 0)
       return NULL;
 
-   return XBOX_CONTROLLER_NAMES[xuser];
+   /* On platforms without dinput support, no
+    * device-specific name is available
+    * > Have to use generic names instead */
+   return XBOX_CONTROLLER_NAME;
+#endif
 }
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
@@ -287,14 +290,17 @@ static bool xinput_joypad_init(void *data)
 
    /* Zero out the states. */
    for (i = 0; i < 4; ++i)
-      memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
-
-   /* Do a dummy poll to check which controllers are connected. */
-   for (i = 0; i < 4; ++i)
    {
-      g_xinput_states[i].connected = !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
-      if (g_xinput_states[i].connected)
-         RARCH_LOG("[XInput]: Found controller, user #%u\n", i);
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      g_xinput_states[i].connected                    = 
+         !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
 
    if (  (!g_xinput_states[0].connected) &&
@@ -306,12 +312,6 @@ static bool xinput_joypad_init(void *data)
 #else
       goto error;
 #endif
-
-   RARCH_LOG("[XInput]: Pads connected: %d\n",
-         g_xinput_states[0].connected +
-         g_xinput_states[1].connected + 
-         g_xinput_states[2].connected + 
-         g_xinput_states[3].connected);
 
 #ifdef HAVE_DINPUT
    g_xinput_block_pads = true;
@@ -327,10 +327,7 @@ static bool xinput_joypad_init(void *data)
 
    for (j = 0; j < MAX_USERS; j++)
    {
-      if (xinput_joypad_name(j))
-         RARCH_LOG("[XInput]: Attempting autoconf for \"%s\", user #%u\n", xinput_joypad_name(j), j);
-      else
-         RARCH_LOG("[XInput]: Attempting autoconf for user #%u\n", j);
+      const char *name = xinput_joypad_name(j);
 
       if (pad_index_to_xuser_index(j) > -1)
       {
@@ -340,14 +337,11 @@ static bool xinput_joypad_init(void *data)
          int32_t dinput_index = 0;
          bool success     = dinput_joypad_get_vidpid_from_xinput_index((int32_t)pad_index_to_xuser_index(j), (int32_t*)&vid, (int32_t*)&pid,
 			 (int32_t*)&dinput_index);
-
-         if (success)
-            RARCH_LOG("[XInput]: Found VID/PID (%04X/%04X) from DINPUT index %d for \"%s\", user #%u\n",
-                  vid, pid, dinput_index, xinput_joypad_name(j), j);
+         /* On success, found VID/PID from dinput index */
 #endif
 
          input_autoconfigure_connect(
-               xinput_joypad_name(j),
+               name,
                NULL,
                xinput_joypad.ident,
                j,
@@ -386,7 +380,17 @@ static void xinput_joypad_destroy(void)
    unsigned i;
 
    for (i = 0; i < 4; ++i)
-      memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
+   {
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      g_xinput_states[i].connected                    = false;
+   }
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
    dylib_close(g_xinput_dll);
@@ -403,99 +407,69 @@ static void xinput_joypad_destroy(void)
 #endif
 }
 
-/* Buttons are provided by XInput as bits of a uint16.
- * Map from rarch button index (0..10) to a mask to 
- * bitwise-& the buttons against.
- * dpad is handled seperately. */
-static const uint16_t button_index_to_bitmap_code[] =  {
-   XINPUT_GAMEPAD_A,
-   XINPUT_GAMEPAD_B,
-   XINPUT_GAMEPAD_X,
-   XINPUT_GAMEPAD_Y,
-   XINPUT_GAMEPAD_LEFT_SHOULDER,
-   XINPUT_GAMEPAD_RIGHT_SHOULDER,
-   XINPUT_GAMEPAD_START,
-   XINPUT_GAMEPAD_BACK,
-   XINPUT_GAMEPAD_LEFT_THUMB,
-   XINPUT_GAMEPAD_RIGHT_THUMB,
-   XINPUT_GAMEPAD_GUIDE
-};
-
-static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t xinput_joypad_button_state(
+      unsigned xuser, uint16_t btn_word,
+      unsigned port, uint16_t joykey)
 {
-   uint16_t btn_word    = 0;
-   unsigned hat_dir     = 0;
-   int xuser            = pad_index_to_xuser_index(port_num);
-
-#ifdef HAVE_DINPUT
-   if (xuser == -1)
-      return dinput_joypad.button(port_num, joykey);
-#endif
-
-   if (!(g_xinput_states[xuser].connected))
-      return false;
-
-   btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
-   hat_dir  = GET_HAT_DIR(joykey);
+   unsigned hat_dir  = GET_HAT_DIR(joykey);
 
    if (hat_dir)
    {
       switch (hat_dir)
       {
          case HAT_UP_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_UP;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_UP);
          case HAT_DOWN_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_DOWN;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_DOWN);
          case HAT_LEFT_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_LEFT;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_LEFT);
          case HAT_RIGHT_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_RIGHT);
+         default:
+            break;
       }
-
-      return false; /* hat requested and no hat button down. */
+      /* hat requested and no hat button down */
    }
-
-   if (joykey < g_xinput_num_buttons)
-      return btn_word & button_index_to_bitmap_code[joykey];
-
-   return false;
+   else if (joykey < g_xinput_num_buttons)
+      return (btn_word & button_index_to_bitmap_code[joykey]);
+   return 0;
 }
 
-static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
+static int16_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
-   int xuser;
+   int xuser         = pad_index_to_xuser_index(port);
+   uint16_t btn_word = 0;
+#ifdef HAVE_DINPUT
+   if (xuser == -1)
+      return dinput_joypad.button(port, joykey);
+#endif
+   if (!(g_xinput_states[xuser].connected))
+      return 0;
+   btn_word          = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   return xinput_joypad_button_state(xuser, btn_word, port, joykey);
+}
+
+static int16_t xinput_joypad_axis_state(
+      XINPUT_GAMEPAD *pad,
+      unsigned port, uint32_t joyaxis)
+{
    int16_t val         = 0;
    int     axis        = -1;
    bool is_neg         = false;
    bool is_pos         = false;
-   XINPUT_GAMEPAD* pad = NULL;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   xuser = pad_index_to_xuser_index(port_num);
-
-#ifdef HAVE_DINPUT
-   if (xuser == -1)
-      return dinput_joypad.axis(port_num, joyaxis);
-#endif
-
-   if (!(g_xinput_states[xuser].connected))
-      return 0;
-
    /* triggers (axes 4,5) cannot be negative */
    if (AXIS_NEG_GET(joyaxis) <= 3)
    {
-      axis = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      axis             = AXIS_NEG_GET(joyaxis);
+      is_neg           = true;
    }
    else if (AXIS_POS_GET(joyaxis) <= 5)
    {
-      axis = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      axis             = AXIS_POS_GET(joyaxis);
+      is_pos           = true;
    }
-
-   pad = &(g_xinput_states[xuser].xstate.Gamepad);
+   else
+      return 0;
 
    switch (axis)
    {
@@ -520,15 +494,65 @@ static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    /* Clamp to avoid overflow error. */
-   if (val == -32768)
-      val = -32767;
-
+   else if (val == -32768)
+      return -32767;
    return val;
+}
+
+static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   int xuser           = pad_index_to_xuser_index(port);
+   XINPUT_GAMEPAD *pad = &(g_xinput_states[xuser].xstate.Gamepad);
+#ifdef HAVE_DINPUT
+   if (xuser == -1)
+      return dinput_joypad.axis(port, joyaxis);
+#endif
+   if (!(g_xinput_states[xuser].connected))
+      return 0;
+   return xinput_joypad_axis_state(pad, port, joyaxis);
+}
+
+static int16_t xinput_joypad_state_func(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   uint16_t btn_word;
+   int16_t ret         = 0;
+   int xuser           = pad_index_to_xuser_index(port);
+   XINPUT_GAMEPAD *pad = &(g_xinput_states[xuser].xstate.Gamepad);
+#ifdef HAVE_DINPUT
+   if (xuser == -1)
+      return dinput_joypad.state(joypad_info, binds, port);
+#endif
+   if (!(g_xinput_states[xuser].connected))
+      return 0;
+   btn_word            = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && xinput_joypad_button_state(
+               xuser, btn_word, port, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(xinput_joypad_axis_state(pad, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static void xinput_joypad_poll(void)
@@ -537,26 +561,15 @@ static void xinput_joypad_poll(void)
 
    for (i = 0; i < 4; ++i)
    {
-#ifdef HAVE_DINPUT
-      if (g_xinput_states[i].connected)
-      {
-         if (g_XInputGetStateEx(i,
-                  &(g_xinput_states[i].xstate))
-               == ERROR_DEVICE_NOT_CONNECTED)
-         {
-            g_xinput_states[i].connected = false;
-            input_autoconfigure_disconnect(i, xinput_joypad_name(i));
-         }
-      }
-#else
-      /* Normally, dinput handles device insertion/removal for us, but
-       * since dinput is not available on UWP we have to do it ourselves */
-      /* Also note that on UWP, the controllers are not available on startup
-       * and are instead 'plugged in' a moment later because Microsoft reasons */
-      /* TODO: This may be bad for performance? */
       bool new_connected = g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
       if (new_connected != g_xinput_states[i].connected)
       {
+#ifndef HAVE_DINPUT
+         /* Normally, dinput handles device insertion/removal for us, but
+          * since dinput is not available on UWP we have to do it ourselves */
+         /* Also note that on UWP, the controllers are not available on startup
+          * and are instead 'plugged in' a moment later because Microsoft reasons */
+         /* TODO: This may be bad for performance? */
          if (new_connected)
          {
             /* This is kinda ugly, but it's the same thing that dinput does */
@@ -564,12 +577,11 @@ static void xinput_joypad_poll(void)
             xinput_joypad_init(NULL);
             return;
          }
-
+#endif
          g_xinput_states[i].connected = new_connected;
          if (!g_xinput_states[i].connected)
             input_autoconfigure_disconnect(i, xinput_joypad_name(i));
       }
-#endif
    }
 
 #ifdef HAVE_DINPUT
@@ -609,6 +621,7 @@ input_device_driver_t xinput_joypad = {
    xinput_joypad_query_pad,
    xinput_joypad_destroy,
    xinput_joypad_button,
+   xinput_joypad_state_func,
    NULL,
    xinput_joypad_axis,
    xinput_joypad_poll,

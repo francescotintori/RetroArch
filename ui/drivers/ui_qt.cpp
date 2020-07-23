@@ -53,8 +53,6 @@ extern "C" {
 #define GROUPED_DRAGGING static_cast<QMainWindow::DockOption>(0)
 #endif
 
-static bool already_started = false;
-
 typedef struct ui_companion_qt
 {
    ui_application_qt_t *app;
@@ -652,11 +650,12 @@ static void ui_companion_qt_notify_content_loaded(void *data) { }
 
 static void ui_companion_qt_toggle(void *data, bool force)
 {
-   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
-   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
-   settings_t *settings       = config_get_ptr();
-   bool ui_companion_toggle   = settings->bools.ui_companion_toggle;
-   bool video_fullscreen      = settings->bools.video_fullscreen;
+   static bool already_started = false;
+   ui_companion_qt_t *handle   = (ui_companion_qt_t*)data;
+   ui_window_qt_t *win_handle  = (ui_window_qt_t*)handle->window;
+   settings_t *settings        = config_get_ptr();
+   bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
+   bool video_fullscreen       = settings->bools.video_fullscreen;
 
    if (ui_companion_toggle || force)
    {
@@ -723,6 +722,14 @@ static void ui_companion_qt_log_msg(void *data, const char *msg)
    win_handle->qtWindow->appendLogMessage(msg);
 }
 
+static bool ui_companion_qt_is_active(void *data)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
+   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
+
+   return win_handle->qtWindow->isVisible();
+}
+
 void ui_companion_qt_msg_queue_push(void *data,
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {
@@ -750,6 +757,7 @@ ui_companion_driver_t ui_companion_qt = {
    NULL,
    NULL,
    ui_companion_qt_log_msg,
+   ui_companion_qt_is_active,
    &ui_browser_window_qt,
    &ui_msg_window_qt,
    &ui_window_qt,

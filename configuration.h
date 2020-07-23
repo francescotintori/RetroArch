@@ -144,7 +144,6 @@ typedef struct settings
       bool input_overlay_auto_rotate;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
-      bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
       bool input_backtouch_enable;
       bool input_backtouch_toggle;
@@ -159,6 +158,14 @@ typedef struct settings
       /* Menu */
       bool filter_by_current_core;
       bool menu_enable_widgets;
+      bool menu_show_load_content_animation;
+      bool notification_show_autoconfig;
+      bool notification_show_cheats_applied;
+      bool notification_show_remap_load;
+      bool notification_show_config_override_load;
+      bool notification_show_set_initial_disk;
+      bool notification_show_fast_forward;
+      bool notification_show_screenshot;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
@@ -285,7 +292,9 @@ typedef struct settings
 
       /* Network */
       bool network_buildbot_auto_extract_archive;
+      bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
+      bool core_updater_auto_backup;
 
       /* UI */
       bool ui_menubar_enable;
@@ -305,9 +314,13 @@ typedef struct settings
       bool cheevos_verbose_enable;
       bool cheevos_auto_screenshot;
       bool cheevos_start_active;
+      bool cheevos_unlock_sound_enable;
 
       /* Camera */
       bool camera_allow;
+
+      /* Bluetooth */
+      bool bluetooth_allow;
 
       /* WiFi */
       bool wifi_allow;
@@ -355,6 +368,9 @@ typedef struct settings
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool check_firmware_before_loading;
+#ifndef HAVE_DYNAMIC
+      bool always_reload_core_on_run_content;
+#endif
 
       bool game_specific_options;
       bool auto_overrides_enable;
@@ -394,6 +410,7 @@ typedef struct settings
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
       bool ozone_truncate_playlist_name;
+      bool ozone_sort_after_truncate_playlist_name;
       bool ozone_scroll_content_metadata;
 
       bool log_to_file;
@@ -436,6 +453,8 @@ typedef struct settings
 
       float input_overlay_opacity;
       float input_overlay_scale;
+      float input_overlay_center_x;
+      float input_overlay_center_y;
 
       float slowmotion_ratio;
       float fastforward_ratio;
@@ -475,6 +494,7 @@ typedef struct settings
       unsigned audio_latency;
 
       unsigned fps_update_interval;
+      unsigned memory_update_interval;
 
       unsigned input_block_timeout;
 
@@ -490,6 +510,7 @@ typedef struct settings
 #ifdef GEKKO
       unsigned input_mouse_scale;
 #endif
+      unsigned input_hotkey_block_delay;
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
@@ -540,11 +561,14 @@ typedef struct settings
       unsigned video_overscan_correction_bottom;
 #endif
       unsigned video_shader_delay;
+      unsigned notification_show_screenshot_duration;
+      unsigned notification_show_screenshot_flash;
 
       /* Accessibility */
       unsigned accessibility_narrator_speech_speed;
 
       unsigned menu_timedate_style;
+      unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
       unsigned gfx_thumbnail_upscale_threshold;
@@ -616,6 +640,8 @@ typedef struct settings
       unsigned ai_service_mode;
       unsigned ai_service_target_lang;
       unsigned ai_service_source_lang;
+
+      unsigned core_updater_auto_backup_history_size;
    } uints;
 
    struct
@@ -631,6 +657,7 @@ typedef struct settings
       char video_driver[32];
       char record_driver[32];
       char camera_driver[32];
+      char bluetooth_driver[32];
       char wifi_driver[32];
       char led_driver[32];
       char location_driver[32];
@@ -750,6 +777,15 @@ typedef struct settings
  * Returns: Default camera driver.
  **/
 const char *config_get_default_camera(void);
+
+/**
+ * config_get_default_bluetooth:
+ *
+ * Gets default bluetooth driver.
+ *
+ * Returns: Default bluetooth driver.
+ **/
+const char *config_get_default_bluetooth(void);
 
 /**
  * config_get_default_wifi:

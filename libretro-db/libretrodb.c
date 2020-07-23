@@ -75,7 +75,7 @@ typedef struct libretrodb_metadata
 
 typedef struct libretrodb_header
 {
-	char magic_number[sizeof(MAGIC_NUMBER)-1];
+	char magic_number[sizeof(MAGIC_NUMBER)];
 	uint64_t metadata_offset;
 } libretrodb_header_t;
 
@@ -87,8 +87,6 @@ struct libretrodb_cursor
 	libretrodb_query_t *query;
 	libretrodb_t *db;
 };
-
-static struct rmsgpack_dom_value sentinal;
 
 static int libretrodb_read_metadata(RFILE *fd, libretrodb_metadata_t *md)
 {
@@ -140,10 +138,11 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
 {
    int rv;
    libretrodb_metadata_t md;
+   static struct rmsgpack_dom_value sentinal;
    struct rmsgpack_dom_value item;
    uint64_t item_count        = 0;
    libretrodb_header_t header = {{0}};
-   ssize_t root = filestream_tell(fd);
+   ssize_t root               = filestream_tell(fd);
 
    memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
 
@@ -591,10 +590,16 @@ clean:
 libretrodb_cursor_t *libretrodb_cursor_new(void)
 {
    libretrodb_cursor_t *dbc = (libretrodb_cursor_t*)
-      calloc(1, sizeof(*dbc));
+      malloc(sizeof(*dbc));
 
    if (!dbc)
       return NULL;
+
+   dbc->is_valid            = 0;
+   dbc->fd                  = NULL;
+   dbc->eof                 = 0;
+   dbc->query               = NULL;
+   dbc->db                  = NULL;
 
    return dbc;
 }
@@ -609,10 +614,16 @@ void libretrodb_cursor_free(libretrodb_cursor_t *dbc)
 
 libretrodb_t *libretrodb_new(void)
 {
-   libretrodb_t *db = (libretrodb_t*)calloc(1, sizeof(*db));
+   libretrodb_t *db = (libretrodb_t*)malloc(sizeof(*db));
 
    if (!db)
       return NULL;
+
+   db->fd                 = NULL;
+   db->root               = 0;
+   db->count              = 0;
+   db->first_index_offset = 0;
+   db->path               = NULL;
 
    return db;
 }

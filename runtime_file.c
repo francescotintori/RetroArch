@@ -32,6 +32,7 @@
 #include <formats/jsonsax_full.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
+#include <time/rtime.h>
 
 #include "file_path_special.h"
 #include "paths.h"
@@ -274,21 +275,19 @@ runtime_log_t *runtime_log_init(
       const char *dir_playlist,
       bool log_per_core)
 {
-   unsigned i;
    char content_name[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
-   core_info_list_t *core_info    = NULL;
-   runtime_log_t *runtime_log     = NULL;
-   const char *core_path_basename = NULL;
+   core_info_ctx_find_t core_info;
+   runtime_log_t *runtime_log = NULL;
 
-   content_name[0]                = '\0';
-   core_name[0]                   = '\0';
-   log_file_dir[0]                = '\0';
-   log_file_path[0]               = '\0';
-   tmp_buf[0]                     = '\0';
+   content_name[0]            = '\0';
+   core_name[0]               = '\0';
+   log_file_dir[0]            = '\0';
+   log_file_path[0]           = '\0';
+   tmp_buf[0]                 = '\0';
 
    if (  string_is_empty(dir_runtime_log) &&
          string_is_empty(dir_playlist))
@@ -300,13 +299,8 @@ runtime_log_t *runtime_log_init(
 
    if (  string_is_empty(core_path) ||
          string_is_equal(core_path, "builtin") ||
-         string_is_equal(core_path, "DETECT"))
-      return NULL;
-
-   core_path_basename = path_basename(core_path);
-
-   if (  string_is_empty(content_path) ||
-         string_is_empty(core_path_basename))
+         string_is_equal(core_path, "DETECT") ||
+         string_is_empty(content_path))
       return NULL;
 
    /* Get core name
@@ -314,24 +308,12 @@ runtime_log_t *runtime_log_init(
     * we are performing aggregate (not per core) logging,
     * since content name is sometimes dependent upon core
     * (e.g. see TyrQuake below) */
-   core_info_get_list(&core_info);
+   core_info.inf  = NULL;
+   core_info.path = core_path;
 
-   if (!core_info)
-      return NULL;
-
-   for (i = 0; i < core_info->count; i++)
-   {
-      const char *entry_core_name = core_info->list[i].core_name;
-      if (!string_is_equal(
-               path_basename(core_info->list[i].path), core_path_basename))
-         continue;
-
-      if (string_is_empty(entry_core_name))
-         return NULL;
-
-      strlcpy(core_name, entry_core_name, sizeof(core_name));
-      break;
-   }
+   if (core_info_find(&core_info) &&
+       core_info.inf->core_name)
+      strlcpy(core_name, core_info.inf->core_name, sizeof(core_name));
 
    if (string_is_empty(core_name))
       return NULL;
@@ -420,7 +402,7 @@ runtime_log_t *runtime_log_init(
 
    /* Phew... If we get this far then all is well.
     * > Create 'runtime_log' object */
-   runtime_log                     = (runtime_log_t*)calloc(1, sizeof(*runtime_log));
+   runtime_log                     = (runtime_log_t*)malloc(sizeof(*runtime_log));
    if (!runtime_log)
       return NULL;
 
@@ -435,6 +417,8 @@ runtime_log_t *runtime_log_init(
    runtime_log->last_played.hour   = 0;
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
+
+   runtime_log->path[0]            = '\0';
 
    strlcpy(runtime_log->path, log_file_path, sizeof(runtime_log->path));
 
@@ -534,30 +518,22 @@ void runtime_log_set_last_played(runtime_log_t *runtime_log,
 void runtime_log_set_last_played_now(runtime_log_t *runtime_log)
 {
    time_t current_time;
-   struct tm *time_info;
+   struct tm time_info;
 
    if (!runtime_log)
       return;
 
    /* Get current time */
    time(&current_time);
-   time_info = localtime(&current_time);
-
-   /* This can actually happen, but if does we probably
-    * have bigger problems to worry about... */
-   if(!time_info)
-   {
-      RARCH_ERR("Failed to get current time.\n");
-      return;
-   }
+   rtime_localtime(&current_time, &time_info);
 
    /* Extract values */
-   runtime_log->last_played.year   = (unsigned)time_info->tm_year + 1900;
-   runtime_log->last_played.month  = (unsigned)time_info->tm_mon + 1;
-   runtime_log->last_played.day    = (unsigned)time_info->tm_mday;
-   runtime_log->last_played.hour   = (unsigned)time_info->tm_hour;
-   runtime_log->last_played.minute = (unsigned)time_info->tm_min;
-   runtime_log->last_played.second = (unsigned)time_info->tm_sec;
+   runtime_log->last_played.year   = (unsigned)time_info.tm_year + 1900;
+   runtime_log->last_played.month  = (unsigned)time_info.tm_mon + 1;
+   runtime_log->last_played.day    = (unsigned)time_info.tm_mday;
+   runtime_log->last_played.hour   = (unsigned)time_info.tm_hour;
+   runtime_log->last_played.minute = (unsigned)time_info.tm_min;
+   runtime_log->last_played.second = (unsigned)time_info.tm_sec;
 }
 
 /* Resets log to default (zero) values */
@@ -694,9 +670,13 @@ static void last_played_strftime(runtime_log_t *runtime_log, char *str, size_t l
 
 /* Gets last played entry value as a pre-formatted string */
 void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
-      char *str, size_t len, enum playlist_sublabel_last_played_style_type timedate_style)
+      char *str, size_t len,
+      enum playlist_sublabel_last_played_style_type timedate_style,
+      enum playlist_sublabel_last_played_date_separator_type date_separator)
 {
-   int n                = 0;
+   bool has_am_pm         = false;
+   const char *format_str = "";
+   int n                  = 0;
    char tmp[64];
 
    tmp[0] = '\0';
@@ -708,127 +688,388 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
       switch (timedate_style)
       {
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %Y-%m-%d %I:%M:%S %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %Y-%m-%d %I:%M %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %m-%d-%Y %I:%M:%S %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %m-%d-%Y %I:%M %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %m-%d %I:%M %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %d-%m-%Y %I:%M:%S %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %d-%m-%Y %I:%M %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM_AMPM:
-            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %d-%m %I:%M %p");
-            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
-            strlcat(str, tmp, len);
-            return;
-         default:
+            has_am_pm = true;
+            /* Using switch statements to set the format
+             * string is verbose, but has far less performance
+             * impact than setting the date separator dynamically
+             * (i.e. no snprintf() or character replacement...) */
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %Y/%m/%d %I:%M:%S %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %Y.%m.%d %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = " %Y-%m-%d %I:%M:%S %p";
+                  break;
+            }
             break;
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AMPM:
+            has_am_pm = true;
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %Y/%m/%d %I:%M %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %Y.%m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = " %Y-%m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS_AMPM:
+            has_am_pm = true;
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %m/%d/%Y %I:%M:%S %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %m.%d.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = " %m-%d-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM_AMPM:
+            has_am_pm = true;
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %m/%d/%Y %I:%M %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %m.%d.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = " %m-%d-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AMPM:
+            has_am_pm = true;
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %m/%d %I:%M %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = " %m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AMPM:
+            has_am_pm = true;
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %d/%m/%Y %I:%M:%S %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %d.%m.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = " %d-%m-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM_AMPM:
+            has_am_pm = true;
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %d/%m/%Y %I:%M %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %d.%m.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = " %d-%m-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM_AMPM:
+            has_am_pm = true;
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = " %d/%m %I:%M %p";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = " %d.%m %I:%M %p";
+                  break;
+               default:
+                  format_str = " %d-%m %I:%M %p";
+                  break;
+            }
+            break;
+         default:
+            has_am_pm = false;
+            break;
+      }
+
+      if (has_am_pm)
+      {
+         last_played_strftime(runtime_log, tmp, sizeof(tmp), format_str);
+         strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+         strlcat(str, tmp, len);
+         return;
       }
 
       /* Handle non-12-hour clock options */
       switch (timedate_style)
       {
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM:
-            n = snprintf(str, len, "%s %04u-%02u-%02u %02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %04u/%02u/%02u %02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %04u.%02u.%02u %02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %04u-%02u-%02u %02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
                   runtime_log->last_played.hour, runtime_log->last_played.minute);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YMD:
-            n = snprintf(str, len, "%s %04u-%02u-%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %04u/%02u/%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %04u.%02u.%02u";
+                  break;
+               default:
+                  format_str = "%s %04u-%02u-%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YM:
-            n = snprintf(str, len, "%s %04u-%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %04u/%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %04u.%02u";
+                  break;
+               default:
+                  format_str = "%s %04u-%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.year, runtime_log->last_played.month);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS:
-            n = snprintf(str, len, "%s %02u-%02u-%04u %02u:%02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u/%04u %02u:%02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u.%04u %02u:%02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u-%04u %02u:%02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.month, runtime_log->last_played.day, runtime_log->last_played.year,
                   runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM:
-            n = snprintf(str, len, "%s %02u-%02u-%04u %02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u/%04u %02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u.%04u %02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u-%04u %02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.month, runtime_log->last_played.day, runtime_log->last_played.year,
                   runtime_log->last_played.hour, runtime_log->last_played.minute);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
-            n = snprintf(str, len, "%s %02u-%02u %02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u %02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u %02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u %02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.month, runtime_log->last_played.day,
                   runtime_log->last_played.hour, runtime_log->last_played.minute);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
-            n = snprintf(str, len, "%s %02u-%02u-%04u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u/%04u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u.%04u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u-%04u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.month, runtime_log->last_played.day, runtime_log->last_played.year);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_MD:
-            n = snprintf(str, len, "%s %02u-%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.month, runtime_log->last_played.day);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS:
-            n = snprintf(str, len, "%s %02u-%02u-%04u %02u:%02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u/%04u %02u:%02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u.%04u %02u:%02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u-%04u %02u:%02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.day, runtime_log->last_played.month, runtime_log->last_played.year,
                   runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM:
-            n = snprintf(str, len, "%s %02u-%02u-%04u %02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u/%04u %02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u.%04u %02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u-%04u %02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.day, runtime_log->last_played.month, runtime_log->last_played.year,
                   runtime_log->last_played.hour, runtime_log->last_played.minute);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM:
-            n = snprintf(str, len, "%s %02u-%02u %02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u %02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u %02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u %02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.day, runtime_log->last_played.month,
                   runtime_log->last_played.hour, runtime_log->last_played.minute);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY:
-            n = snprintf(str, len, "%s %02u-%02u-%04u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u/%04u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u.%04u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u-%04u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.day, runtime_log->last_played.month, runtime_log->last_played.year);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_DDMM:
-            n = snprintf(str, len, "%s %02u-%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %02u/%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %02u.%02u";
+                  break;
+               default:
+                  format_str = "%s %02u-%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.day, runtime_log->last_played.month);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
          default:
-            n = snprintf(str, len, "%s %04u-%02u-%02u %02u:%02u:%02u",
+            switch (date_separator)
+            {
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH:
+                  format_str = "%s %04u/%02u/%02u %02u:%02u:%02u";
+                  break;
+               case PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD:
+                  format_str = "%s %04u.%02u.%02u %02u:%02u:%02u";
+                  break;
+               default:
+                  format_str = "%s %04u-%02u-%02u %02u:%02u:%02u";
+                  break;
+            }
+            n = snprintf(str, len, format_str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
                   runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
@@ -1013,7 +1254,8 @@ void runtime_update_playlist(
       const char *dir_runtime_log,
       const char *dir_playlist,
       bool log_per_core,
-      enum playlist_sublabel_last_played_style_type timedate_style)
+      enum playlist_sublabel_last_played_style_type timedate_style,
+      enum playlist_sublabel_last_played_date_separator_type date_separator)
 {
    char runtime_str[64];
    char last_played_str[64];
@@ -1068,7 +1310,8 @@ void runtime_update_playlist(
                &update_entry.last_played_year, &update_entry.last_played_month, &update_entry.last_played_day,
                &update_entry.last_played_hour, &update_entry.last_played_minute, &update_entry.last_played_second);
 
-         runtime_log_get_last_played_str(runtime_log, last_played_str, sizeof(last_played_str), timedate_style);
+         runtime_log_get_last_played_str(runtime_log,
+               last_played_str, sizeof(last_played_str), timedate_style, date_separator);
 
          /* Playlist entry now contains valid runtime data */
          update_entry.runtime_status = PLAYLIST_RUNTIME_VALID;
@@ -1087,7 +1330,8 @@ void runtime_update_playlist(
           string_is_equal(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL, runtime_str, sizeof(runtime_str));
-         runtime_log_get_last_played_str(NULL, last_played_str, sizeof(last_played_str), timedate_style);
+         runtime_log_get_last_played_str(NULL, last_played_str, sizeof(last_played_str),
+               timedate_style, date_separator);
 
          /* While runtime data does not exist, the playlist
           * entry does now contain valid information... */

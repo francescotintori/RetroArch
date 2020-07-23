@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * mem_utils.c:
  * Utilities for memory management
@@ -238,7 +256,7 @@ static void heap_free(void *addr) {
 	heap_blk_free((uintptr_t)addr);
 }
 
-void vitagl_mem_term(void) {
+void vgl_mem_term(void) {
 	heap_destroy();
 	if (mempool_addr[0] != NULL) {
 		sceKernelFreeMemBlock(mempool_id[0]);
@@ -250,41 +268,47 @@ void vitagl_mem_term(void) {
 	}
 }
 
-int vitagl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
+int vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	if (mempool_addr[0] != NULL)
-		vitagl_mem_term();
+		vgl_mem_term();
 
-	mempool_size[0] = ALIGN(size_cdram, 256 * 1024);
-	mempool_size[1] = ALIGN(size_ram, 4 * 1024);
-	mempool_size[2] = ALIGN(size_phycont, 256 * 1024);
-	mempool_id[0] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[0], NULL);
-	mempool_id[1] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[1], NULL);
-	mempool_id[2] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[2], NULL);
+	mempool_size[VGL_MEM_VRAM - 1] = ALIGN(size_cdram, 256 * 1024);
+	mempool_size[VGL_MEM_RAM - 1] = ALIGN(size_ram, 4 * 1024);
+	mempool_size[VGL_MEM_SLOW - 1] = ALIGN(size_phycont, 256 * 1024);
+	if (size_cdram)
+		mempool_id[VGL_MEM_VRAM - 1] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[VGL_MEM_VRAM - 1], NULL);
+	mempool_id[VGL_MEM_RAM - 1] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM - 1], NULL);
+	if (size_phycont)
+		mempool_id[VGL_MEM_SLOW - 1] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW - 1], NULL);
 
 	for (int i = 0; i < VGL_MEM_TYPE_COUNT - 2; i++) {
-		sceKernelGetMemBlockBase(mempool_id[i], &mempool_addr[i]);
-		sceGxmMapMemory(mempool_addr[i], mempool_size[i], SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+		if (mempool_size[i]) {
+			sceKernelGetMemBlockBase(mempool_id[i], &mempool_addr[i]);
+			sceGxmMapMemory(mempool_addr[i], mempool_size[i], SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+		}
 	}
 
 	// Initialize heap
 	heap_init();
 
 	// Add memblocks to heap
-	heap_extend(VGL_MEM_VRAM, mempool_addr[0], mempool_size[0]);
+	if (size_cdram)
+		heap_extend(VGL_MEM_VRAM, mempool_addr[0], mempool_size[0]);
 	heap_extend(VGL_MEM_RAM, mempool_addr[1], mempool_size[1]);
-	heap_extend(VGL_MEM_SLOW, mempool_addr[2], mempool_size[2]);
+	if (size_phycont)
+		heap_extend(VGL_MEM_SLOW, mempool_addr[2], mempool_size[2]);
 
 	return 1;
 }
 
-void vitagl_mempool_free(void *ptr, vglMemType type) {
+void vgl_mem_free(void *ptr, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
 		free(ptr);
 	else
 		heap_free(ptr); // type is already stored in heap for alloc'd blocks
 }
 
-void *vitagl_mempool_alloc(size_t size, vglMemType type) {
+void *vgl_mempool_alloc(size_t size, vglMemType type) {
 	void *res = NULL;
 	if (size <= tm_free[type])
 		res = heap_alloc(type, size, MEM_ALIGNMENT);
@@ -292,6 +316,6 @@ void *vitagl_mempool_alloc(size_t size, vglMemType type) {
 }
 
 // Returns currently free space on mempool
-size_t vitagl_mempool_get_free_space(vglMemType type) {
+size_t vgl_mempool_get_free_space(vglMemType type) {
 	return tm_free[type];
 }

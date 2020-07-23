@@ -32,7 +32,7 @@
 #ifdef HAVE_DISCORD
 #include "../discord.h"
 
-/* TODO/FIXME - global */
+/* TODO/FIXME - global public variable */
 extern bool discord_is_inited;
 #endif
 
@@ -75,7 +75,8 @@ static void print_state(netplay_t *netplay)
  * Mark a particular remote connection as unpaused and, if relevant, inform
  * every one else that they may resume.
  */
-static void remote_unpaused(netplay_t *netplay, struct netplay_connection *connection)
+static void remote_unpaused(netplay_t *netplay,
+      struct netplay_connection *connection)
 {
     size_t i;
     connection->paused = false;
@@ -98,7 +99,8 @@ static void remote_unpaused(netplay_t *netplay, struct netplay_connection *conne
  *
  * Disconnects an active Netplay connection due to an error
  */
-void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
+void netplay_hangup(netplay_t *netplay,
+      struct netplay_connection *connection)
 {
    char msg[512];
    const char *dmsg;
@@ -188,8 +190,8 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
 /**
  * netplay_delayed_state_change:
  *
- * Handle any pending state changes which are ready as of the beginning of the
- * current frame.
+ * Handle any pending state changes which are ready 
+ * as of the beginning of the current frame.
  */
 void netplay_delayed_state_change(netplay_t *netplay)
 {
@@ -1215,14 +1217,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
 #define START(which) \
          do { \
-            ptr = which; \
+            ptr    = which; \
             dframe = &netplay->buffer[ptr]; \
-         } while(0)
+         } while (0)
 #define NEXT() \
          do { \
-            ptr = NEXT_PTR(ptr); \
+            ptr    = NEXT_PTR(ptr); \
             dframe = &netplay->buffer[ptr]; \
-         } while(0)
+         } while (0)
 
          if (netplay->is_server)
          {

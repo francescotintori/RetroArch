@@ -31,6 +31,7 @@
 #if defined(HAVE_ZLIB)
 #include <streams/rzip_stream.h>
 #endif
+#include <encodings/crc32.h>
 
 struct intfstream_internal
 {
@@ -220,12 +221,24 @@ void *intfstream_init(intfstream_info_t *info)
    if (!info)
       goto error;
 
-   intf = (intfstream_internal_t*)calloc(1, sizeof(*intf));
+   intf = (intfstream_internal_t*)malloc(sizeof(*intf));
 
    if (!intf)
       goto error;
 
-   intf->type = info->type;
+   intf->type            = info->type;
+   intf->file.fp         = NULL;
+   intf->memory.buf.data = NULL;
+   intf->memory.buf.size = 0;
+   intf->memory.fp       = NULL;
+   intf->memory.writable = false;
+#ifdef HAVE_CHD
+   intf->chd.track       = 0;
+   intf->chd.fp          = NULL;
+#endif
+#ifdef HAVE_ZLIB
+   intf->rzip.fp         = NULL;
+#endif
 
    switch (intf->type)
    {
@@ -255,7 +268,8 @@ error:
    return NULL;
 }
 
-int64_t intfstream_seek(intfstream_internal_t *intf, int64_t offset, int whence)
+int64_t intfstream_seek(
+      intfstream_internal_t *intf, int64_t offset, int whence)
 {
    if (!intf)
       return -1;
@@ -613,6 +627,32 @@ bool intfstream_is_compressed(intfstream_internal_t *intf)
    }
 
    return false;
+}
+
+bool intfstream_get_crc(intfstream_internal_t *intf, uint32_t *crc)
+{
+   int64_t data_read    = 0;
+   uint32_t accumulator = 0;
+   uint8_t buffer[4096];
+
+   if (!intf || !crc)
+      return false;
+
+   /* Ensure we start at the beginning of the file */
+   intfstream_rewind(intf);
+
+   while ((data_read = intfstream_read(intf, buffer, sizeof(buffer))) > 0)
+      accumulator = encoding_crc32(accumulator, buffer, (size_t)data_read);
+
+   if (data_read < 0)
+      return false;
+
+   *crc = accumulator;
+
+   /* Reset file to the beginning */
+   intfstream_rewind(intf);
+
+   return true;
 }
 
 intfstream_t* intfstream_open_file(const char *path,

@@ -6,11 +6,35 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   "Trình đơn chính"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
    "Thiết lập"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   "Ưa thích"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   "Lịch sử"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   "Hình ảnh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   "Âm nhạc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   "Video"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
@@ -28,24 +52,56 @@ MSG_HASH(
    "Trình đơn lẹ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   "Truy xuất nhanh mọi cài đặt trong các trò chơi liên quan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
    "Tải Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST,
+   "Chọn nhân nào sẽ dùng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Tải Content"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   "Chọn nội dung nào sẽ bắt đầu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   "Mở đĩa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Mở đĩa phương tiện vật lý. Đầu tiên là chọn nhân (Nạp nhân) để dùng với đĩa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Dump đĩa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Dump đĩa vật lý ra bộ nhớ trong. Điều này sẽ tiến hành lưu là dạng tệp ảnh."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Playlists Danh mục"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   "Đã quét nội dung khớp với Csdl và hiển thị tại đây."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "Thêm nội dung"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Tải/quét nội dung và thêm vào bộ sưu tập."
+   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   "Cập nhật trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
@@ -64,8 +120,36 @@ MSG_HASH(
    "Thiết lập"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "Cấu hình chương trình."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   "Thông tin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   "Hiển thị thông tin hệ thống."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   "Tệp cấu hình"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   "Trợ giúp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Khởi động lại chương trình."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Thoát RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Thoát khỏi ứng dụng."
    )
 
 /* Main Menu > Load Core */
@@ -73,6 +157,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    "Tải về Core..."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   "Tải về và cài đặt nhân từ internet."
    )
 
 /* Main Menu > Load Content */
@@ -96,10 +184,6 @@ MSG_HASH(
 /* Main Menu > Online Updater */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Cập nhật cho Core"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Tải về nội dung"
    )
@@ -110,10 +194,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
    "Cập nhật Assets"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "Cập nhật Autoconfig Profiles"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
@@ -439,10 +519,6 @@ MSG_HASH(
 /* Settings > Input */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   "Kích hoạt Remap Binds"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Kích hoạt Autoconfig"
    )
@@ -460,16 +536,8 @@ MSG_HASH(
 /* Settings > Input > Hotkey Binds */
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Kết hợp nút Gamepad để vào menu bật/tắt."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    "Tải state"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Bật/tắt chế độ toàn màn hình"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -479,21 +547,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Chụp ảnh màn hình"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-   "Âm thanh mute toggle"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "Kích hoạt hotkeys"
-   )
 
 /* Settings > Input > Port # Binds */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-   "Lưu Autoconfig"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
    "Kích hoạt Turbo"
@@ -516,17 +572,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
    "Tự động chạy Core"
    )
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-   "Lưu cấu hình khi thoát"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "Lưu cấu hình khi thoát retroarch."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Tải Content-Specific Core Options Automatically"
@@ -550,10 +600,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
    "Khi tải savestate đừng ghi đè SaveRAM"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Tự động tải State"
-   )
 
 /* Settings > Logging */
 
@@ -564,10 +610,6 @@ MSG_HASH(
 
 /* Settings > File Browser */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Hiện ra tập tin và thư mục ẩn trong trình duyệt tập tin."
-   )
 
 /* Settings > Frame Throttle */
 
@@ -589,25 +631,23 @@ MSG_HASH(
    "Kích hoạt Post Filter Recording"
    )
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Tự động tải Preferred Overlay"
    )
 
-/* Settings > Onscreen Display > Video Layout */
 
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > Video Layout */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FPS_SHOW,
-   "Hiển thị tốc độ khung hình/giây trên màn hình."
-   )
+
+/* Settings > On-Screen Display > On-Screen Notifications */
+
 
 /* Settings > User Interface */
 
@@ -724,10 +764,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    "Tên truy nhập"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
-   "Thiết lập ngôn ngữ của giao diện."
    )
 
 /* Settings > User > Privacy */
@@ -863,10 +899,6 @@ MSG_HASH(
 
 /* Import content > Manual Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "Core Danh mục"
-   )
 
 /* Playlist > Playlist Item */
 
@@ -972,7 +1004,7 @@ MSG_HASH(
 /* Quick Menu > Cheats > Cheat Details */
 
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -1025,78 +1057,6 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Tiếng Ả Rập"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-   "Tiếng Trung Quốc (Chữ Hán giản thể)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-   "Tiếng Trung Quốc (Chữ Hán phồn thể)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-   "Tiếng Hà Lan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
-   "Tiếng Anh"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-   "Tiếng Quốc tế ngữ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-   "Tiếng Pháp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-   "Tiếng Đức"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
-   "Tiếng NGƯỜI HY LẠP"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
-   "Tiếng Ý"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
-   "Tiếng Nhật"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Tiếng Hàn Quốc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-   "Tiếng Bồ Đào Nha (Brazil)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-   "Tiếng Bồ Đào Nha (Portugal)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-   "Tiếng Nga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
-   "Tiếng Tây Ban Nha"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
-   "Tiếng Thổ Nhĩ Kỳ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-   "Tiếng Việt"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
    "<Mục nội dung>"
@@ -1482,10 +1442,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Kích hoạt Touch"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
-   "Kích hoạt Keyboard Gamepad Mapping"
-   )
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif
@@ -1524,6 +1480,7 @@ MSG_HASH(
 #ifdef GEKKO
 #endif
 #ifdef HAVE_ODROIDGO2
+#else
 #endif
 #if defined(_3DS)
 MSG_HASH(

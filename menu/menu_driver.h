@@ -32,6 +32,7 @@
 #include "menu_defines.h"
 #include "menu_input.h"
 #include "menu_entries.h"
+#include "menu_shader.h"
 #include "../gfx/gfx_display.h"
 
 #include "../gfx/font_driver.h"
@@ -95,10 +96,11 @@ enum menu_settings_type
    MENU_SETTING_ACTION,
    MENU_SETTING_ACTION_RUN,
    MENU_SETTING_ACTION_CLOSE,
+   MENU_SETTING_ACTION_CLOSE_HORIZONTAL,
    MENU_SETTING_ACTION_CORE_OPTIONS,
    MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS,
    MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS,
-   MENU_SETTING_ACTION_CORE_INFORMATION,
+   MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS,
    MENU_SETTING_ACTION_CORE_DISK_OPTIONS,
    MENU_SETTING_ACTION_CORE_SHADER_OPTIONS,
    MENU_SETTING_ACTION_SAVESTATE,
@@ -106,6 +108,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_SCREENSHOT,
    MENU_SETTING_ACTION_DELETE_ENTRY,
    MENU_SETTING_ACTION_RESET,
+   MENU_SETTING_ACTION_CORE_LOCK,
    MENU_SETTING_ACTION_CORE_DELETE,
    MENU_SETTING_STRING_OPTIONS,
    MENU_SETTING_GROUP,
@@ -118,6 +121,7 @@ enum menu_settings_type
    MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
    MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
    MENU_SETTING_PLAYLIST_MANAGER_SORT_MODE,
+   MENU_BLUETOOTH,
    MENU_WIFI,
    MENU_ROOM,
    MENU_ROOM_LAN,
@@ -205,6 +209,12 @@ enum menu_settings_type
    MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME,
    MENU_SETTING_ACTION_MANUAL_CONTENT_SCAN_START,
 
+   MENU_SETTING_ACTION_CORE_CREATE_BACKUP,
+   MENU_SETTING_ACTION_CORE_RESTORE_BACKUP,
+   MENU_SETTING_ITEM_CORE_RESTORE_BACKUP,
+   MENU_SETTING_ACTION_CORE_DELETE_BACKUP,
+   MENU_SETTING_ITEM_CORE_DELETE_BACKUP,
+
    MENU_SETTINGS_LAST
 };
 
@@ -285,7 +295,6 @@ typedef struct menu_ctx_driver
          enum menu_input_pointer_gesture gesture,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
-   bool (*get_load_content_animation_data)(void *userdata, uintptr_t *icon, char **playlist_name);
    /* This will be invoked whenever a menu entry action
     * (menu_entry_action()) is performed */
    int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
@@ -298,7 +307,7 @@ typedef struct
    uint64_t state;
 
    char *core_buf;
-   char menu_state_msg[1024];
+   char menu_state_msg[8192];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -395,24 +404,6 @@ typedef struct menu_ctx_bind
 } menu_ctx_bind_t;
 
 /**
- * menu_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to menu driver at index. Can be NULL
- * if nothing found.
- **/
-const void *menu_driver_find_handle(int index);
-
-/**
- * menu_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of menu driver at index. Can be NULL
- * if nothing found.
- **/
-const char *menu_driver_find_ident(int index);
-
-/**
  * config_get_menu_driver_options:
  *
  * Get an enumerated list of all menu driver names,
@@ -429,13 +420,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info);
 
-bool menu_driver_get_load_content_animation_data(
-      uintptr_t *icon, char **playlist_name);
-
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
       retro_time_t current_time);
-
-bool menu_driver_list_clear(file_list_t *list);
 
 bool menu_driver_list_cache(menu_ctx_list_t *list);
 
@@ -452,10 +438,6 @@ void menu_driver_set_thumbnail_system(char *s, size_t len);
 void menu_driver_get_thumbnail_system(char *s, size_t len);
 
 void menu_driver_set_thumbnail_content(char *s, size_t len);
-
-bool menu_driver_list_insert(menu_ctx_list_t *list);
-
-bool menu_driver_list_set_selection(file_list_t *list);
 
 bool menu_driver_list_get_selection(menu_ctx_list_t *list);
 
@@ -488,9 +470,6 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
-
-
-void menu_driver_destroy(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 

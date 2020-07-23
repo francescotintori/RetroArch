@@ -20,11 +20,20 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../../file_path_special.h"
+#ifdef HAVE_CHEATS
 #include "../../managers/cheat_manager.h"
+#endif
 
 #ifndef BIND_ACTION_LABEL
 #define BIND_ACTION_LABEL(cbs, name) (cbs)->action_label = (name)
 #endif
+
+#define FILL_LABEL_MACRO(func, lbl) \
+static int (func)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
+{ \
+   strlcpy(s, msg_hash_to_str(lbl), len); \
+   return 0; \
+}
 
 static int action_bind_label_generic(
       file_list_t *list,
@@ -35,18 +44,11 @@ static int action_bind_label_generic(
    return 0;
 }
 
-#define fill_label_macro(func, lbl) \
-static int (func)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
-{ \
-   strlcpy(s, msg_hash_to_str(lbl), len); \
-   return 0; \
-}
-
-fill_label_macro(action_bind_label_rdb_entry_detail,         MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL)
-fill_label_macro(action_bind_label_internal_memory,          MSG_INTERNAL_STORAGE)
-fill_label_macro(action_bind_label_removable_storage,        MSG_REMOVABLE_STORAGE)
-fill_label_macro(action_bind_label_external_application_dir, MSG_EXTERNAL_APPLICATION_DIR)
-fill_label_macro(action_bind_label_application_dir,          MSG_APPLICATION_DIR)
+FILL_LABEL_MACRO(action_bind_label_rdb_entry_detail,         MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL)
+FILL_LABEL_MACRO(action_bind_label_internal_memory,          MSG_INTERNAL_STORAGE)
+FILL_LABEL_MACRO(action_bind_label_removable_storage,        MSG_REMOVABLE_STORAGE)
+FILL_LABEL_MACRO(action_bind_label_external_application_dir, MSG_EXTERNAL_APPLICATION_DIR)
+FILL_LABEL_MACRO(action_bind_label_application_dir,          MSG_APPLICATION_DIR)
 
 static int action_bind_label_playlist_collection_entry(
       file_list_t *list,
@@ -94,6 +96,7 @@ static int action_bind_label_playlist_collection_entry(
    return 0;
 }
 
+#ifdef HAVE_CHEATS
 static int action_bind_label_cheat_browse_address(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -103,6 +106,7 @@ static int action_bind_label_cheat_browse_address(
    snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY), cheat_manager_state.browse_address);
    return 0;
 }
+#endif
 
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
@@ -123,7 +127,9 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
             break;
          case MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY:
+#ifdef HAVE_CHEATS
             BIND_ACTION_LABEL(cbs, action_bind_label_cheat_browse_address);
+#endif
             break;
          case MSG_INTERNAL_STORAGE:
             BIND_ACTION_LABEL(cbs, action_bind_label_internal_memory);

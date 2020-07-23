@@ -146,7 +146,6 @@ static float ozone_border_1_nord[16] = COLOR_HEX_TO_FLOAT(0x88C0D0, 1.0f);
 static float ozone_border_0_gruvbox_dark[16] = COLOR_HEX_TO_FLOAT(0xAF3A03, 1.0f);
 static float ozone_border_1_gruvbox_dark[16] = COLOR_HEX_TO_FLOAT(0xFE8019, 1.0f);
 
-
 ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),
    ozone_background_libretro_running_light,
@@ -294,9 +293,6 @@ ozone_theme_t *ozone_default_theme          = &ozone_theme_dark; /* also used as
  * opacity */
 float last_framebuffer_opacity               = -1.0f;
 
-static float background_running_alpha_top    = 1.0f;
-static float background_running_alpha_bottom = 0.75f;
-
 void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 {
    ozone_theme_t *theme = ozone_default_theme;
@@ -355,9 +351,12 @@ unsigned ozone_get_system_theme(void)
 #endif
 }
 
-void ozone_set_background_running_opacity(ozone_handle_t *ozone, float framebuffer_opacity)
+void ozone_set_background_running_opacity(
+      ozone_handle_t *ozone, float framebuffer_opacity)
 {
-   float *background = NULL;
+   static float background_running_alpha_top    = 1.0f;
+   static float background_running_alpha_bottom = 0.75f;
+   float *background                            = NULL;
 
    if (!ozone || !ozone->theme->background_libretro_running)
       return;

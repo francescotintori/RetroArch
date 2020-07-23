@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * matrices.c:
  * Implementation for matrices related functions
@@ -28,7 +46,7 @@ void glMatrixMode(GLenum mode) {
 		matrix = &projection_matrix;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -37,11 +55,9 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if ((left == right) || (bottom == top) || (nearVal == farVal)) {
-		_vitagl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -54,11 +70,9 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if ((left == right) || (bottom == top) || (nearVal < 0) || (farVal < 0)) {
-		_vitagl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -75,42 +89,33 @@ void glLoadIdentity(void) {
 
 void glMultMatrixf(const GLfloat *m) {
 	matrix4x4 res;
-		
-#ifdef TRANSPOSE_MATRICES
+
 	// Properly ordering matrix to perform multiplication
 	matrix4x4 tmp;
 	int i, j;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			tmp[i][j] = m[j * 4 + i];
-
 		}
 	}
 
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, tmp);
-#else
-	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, *matrix, m);
-#endif
+
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 	mvp_modified = GL_TRUE;
 }
 
 void glLoadMatrixf(const GLfloat *m) {
-#ifdef TRANSPOSE_MATRICES
 	// Properly ordering matrix
-	matrix4x4 tmp;
 	int i, j;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			(*matrix)[i][j] = m[j * 4 + i];
 		}
 	}
-#else
-	memcpy(*matrix, m, sizeof(matrix4x4));
-#endif
+
 	mvp_modified = GL_TRUE;
 }
 
@@ -130,8 +135,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 
@@ -153,8 +157,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 
@@ -162,7 +165,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH) {
-			_vitagl_error = GL_STACK_OVERFLOW;
+			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
@@ -172,7 +175,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (projection_stack_counter >= GENERIC_STACK_DEPTH) {
-			_vitagl_error = GL_STACK_OVERFLOW;
+			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
@@ -184,17 +187,16 @@ void glPopMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 
 	if (matrix == &modelview_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (modelview_stack_counter == 0)
-			_vitagl_error = GL_STACK_UNDERFLOW;
-		else
+		if (modelview_stack_counter == 0) {
+			SET_GL_ERROR(GL_STACK_UNDERFLOW)
+		} else
 #endif
 			// Copying last matrix on stack into current matrix and decreasing stack counter
 			matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
@@ -202,12 +204,25 @@ void glPopMatrix(void) {
 	} else if (matrix == &projection_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (projection_stack_counter == 0)
-			_vitagl_error = GL_STACK_UNDERFLOW;
-		else
+		if (projection_stack_counter == 0) {
+			SET_GL_ERROR(GL_STACK_UNDERFLOW)
+		} else
 #endif
 			// Copying last matrix on stack into current matrix and decreasing stack counter
 			matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
 	}
+	mvp_modified = GL_TRUE;
+}
+
+void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	// Initializing frustum matrix with requested parameters
+	matrix4x4_init_perspective(*matrix, fovy, aspect, zNear, zFar);
 	mvp_modified = GL_TRUE;
 }

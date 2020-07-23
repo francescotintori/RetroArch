@@ -72,9 +72,10 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
-#endif
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -156,13 +157,15 @@ struct content_stream
 
 struct content_information_ctx
 {
-   bool is_ips_pref;
-   bool is_bps_pref;
-   bool is_ups_pref;
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
+#ifdef HAVE_PATCH
+   bool is_ips_pref;
+   bool is_bps_pref;
+   bool is_ups_pref;
    bool patch_is_blocked;
+#endif
    bool bios_is_missing;
    bool check_firmware_before_loading;
 
@@ -182,31 +185,6 @@ struct content_information_ctx
 
    struct string_list *temporary_content;
 };
-
-static bool _launched_from_cli                                = true;
-
-typedef struct content_state
-{
-   bool is_inited;
-   bool core_does_not_need_content;
-   bool pending_subsystem_init;
-   bool pending_rom_crc;
-
-   int pending_subsystem_rom_num;
-   int pending_subsystem_id;
-   unsigned pending_subsystem_rom_id;
-   uint32_t rom_crc;
-
-   char companion_ui_crc32[32];
-   char pending_subsystem_ident[255];
-   char pending_rom_crc_path[PATH_MAX_LENGTH];
-   char companion_ui_db_name[PATH_MAX_LENGTH];
-   char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
-
-   struct string_list *temporary_content;
-} content_state_t;
-
-static content_state_t content_st;
 
 #ifdef HAVE_CDROM
 static void task_cdrom_dump_handler(retro_task_t *task)
@@ -510,22 +488,21 @@ static int64_t content_file_read(const char *path, void **buf, int64_t *length)
  **/
 static void content_load_init_wrap(
       const struct rarch_main_wrap *args,
-      int *argc, char **argv)
+      int *argc, char **argv,
+      bool print_args)
 {
-   int i;
-
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 
    if (args->content_path)
    {
-      RARCH_LOG("Using content: %s.\n", args->content_path);
+      RARCH_LOG("[CORE]: Using content: %s.\n", args->content_path);
       argv[(*argc)++] = strdup(args->content_path);
    }
 #ifdef HAVE_MENU
    else
    {
-      RARCH_LOG("%s\n",
+      RARCH_LOG("[CORE]: %s\n",
             msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
       argv[(*argc)++] = strdup("--menu");
    }
@@ -560,8 +537,12 @@ static void content_load_init_wrap(
    if (args->verbose)
       argv[(*argc)++] = strdup("-v");
 
-   for (i = 0; i < *argc; i++)
-      RARCH_LOG("arg #%d: %s\n", i, argv[i]);
+   if (print_args)
+   {
+      int i;
+      for (i = 0; i < *argc; i++)
+         RARCH_LOG("[CORE]: Arg #%d: %s\n", i, argv[i]);
+   }
 }
 
 /**
@@ -574,10 +555,11 @@ static void content_load_init_wrap(
  * Returns: false (0) if retroarch_main_init failed,
  * otherwise true (1).
  **/
-static bool content_load(content_ctx_info_t *info, 
+static bool content_load(content_ctx_info_t *info,
       content_state_t *p_content)
 {
    unsigned i                        = 0;
+   bool success                      = false;
    int rarch_argc                    = 0;
    char *rarch_argv[MAX_ARGS]        = {NULL};
    char *argv_copy [MAX_ARGS]        = {NULL};
@@ -586,10 +568,21 @@ static bool content_load(content_ctx_info_t *info,
    struct rarch_main_wrap *wrap_args = NULL;
 
    if (!(wrap_args = (struct rarch_main_wrap*)
-      calloc(1, sizeof(*wrap_args))))
+      malloc(sizeof(*wrap_args))))
       return false;
 
    retro_assert(wrap_args);
+
+   wrap_args->argv           = NULL;
+   wrap_args->content_path   = NULL;
+   wrap_args->sram_path      = NULL;
+   wrap_args->state_path     = NULL;
+   wrap_args->config_path    = NULL;
+   wrap_args->libretro_path  = NULL;
+   wrap_args->verbose        = false;
+   wrap_args->no_content     = false;
+   wrap_args->touched        = false;
+   wrap_args->argc           = 0;
 
    if (info->environ_get)
       info->environ_get(rarch_argc_ptr,
@@ -597,7 +590,8 @@ static bool content_load(content_ctx_info_t *info,
 
    if (wrap_args->touched)
    {
-      content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+      content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv,
+            false);
       memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
       rarch_argv_ptr = (char**)rarch_argv;
       rarch_argc_ptr = (int*)&rarch_argc;
@@ -608,19 +602,40 @@ static bool content_load(content_ctx_info_t *info,
    wrap_args->argc = *rarch_argc_ptr;
    wrap_args->argv = rarch_argv_ptr;
 
-   if (!retroarch_main_init(wrap_args->argc, wrap_args->argv))
-   {
-      for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-         free(argv_copy[i]);
-      free(wrap_args);
+   success         = retroarch_main_init(wrap_args->argc, wrap_args->argv);
+
+   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
+      free(argv_copy[i]);
+   free(wrap_args);
+
+   if (!success)
       return false;
-   }
 
    if (p_content->pending_subsystem_init)
    {
       command_event(CMD_EVENT_CORE_INIT, NULL);
       content_clear_subsystem();
    }
+
+#ifdef HAVE_GFX_WIDGETS
+   /* If retroarch_main_init() returned true, we
+    * can safely trigger a load content animation */
+   if (gfx_widgets_ready())
+   {
+      /* Note: Have to read settings value here
+       * (It will be invalid if we try to read
+       *  it earlier...) */
+#ifdef HAVE_CONFIGFILE
+      settings_t *settings              = config_get_ptr();
+      bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
+#else
+      bool show_load_content_animation  = false;
+#endif
+
+      if (show_load_content_animation)
+         gfx_widget_start_load_content_animation();
+   }
+#endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
@@ -636,9 +651,6 @@ static bool content_load(content_ctx_info_t *info,
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
    frontend_driver_content_loaded();
 
-   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-      free(argv_copy[i]);
-   free(wrap_args);
    return true;
 }
 
@@ -662,7 +674,7 @@ static bool load_content_into_memory(
 {
    uint8_t *ret_buf           = NULL;
 
-   RARCH_LOG("%s: %s.\n",
+   RARCH_LOG("[CONTENT LOAD]: %s: %s.\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
 
    if (!content_file_read(path, (void**) &ret_buf, length))
@@ -678,6 +690,7 @@ static bool load_content_into_memory(
       /* If we have a media type, ignore CRC32 calculation. */
       if (type == RARCH_CONTENT_NONE)
       {
+#ifdef HAVE_PATCH
          bool has_patch = false;
 
          /* First content file is significant, attempt to do patching,
@@ -698,9 +711,10 @@ static bool load_content_into_memory(
          if (has_patch)
          {
             p_content->rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
-            RARCH_LOG("CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
+            RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
          }
          else
+#endif
          {
             strlcpy(p_content->pending_rom_crc_path,
                   path, sizeof(p_content->pending_rom_crc_path));
@@ -737,7 +751,7 @@ static bool load_content_from_compressed_archive(
    new_basedir[0]                    = '\0';
    attributes.i                      = 0;
 
-   RARCH_LOG("Compressed file in case of need_fullpath."
+   RARCH_LOG("[CONTENT LOAD]: Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
    if (!string_is_empty(content_ctx->directory_cache))
@@ -745,7 +759,7 @@ static bool load_content_from_compressed_archive(
 
    if (!path_is_directory(new_basedir))
    {
-      RARCH_WARN("Tried extracting to cache directory, but "
+      RARCH_WARN("[CONTENT LOAD]: Tried extracting to cache directory, but "
             "cache directory was not set or found. "
             "Setting cache directory to directory "
             "derived by basename...\n");
@@ -762,15 +776,13 @@ static bool load_content_from_compressed_archive(
    if (!file_archive_compressed_read(path,
          NULL, new_path, &new_path_len) || new_path_len < 0)
    {
-      size_t path_size = 1024 * sizeof(char);
-      char *str        = (char*)malloc(path_size);
-      snprintf(str,
-            path_size,
+      char str[1024];
+      str[0] = '\0';
+      snprintf(str, sizeof(str),
             "%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
       *error_string = strdup(str);
-      free(str);
       free(new_path);
       return false;
    }
@@ -826,9 +838,9 @@ static bool content_file_init_extract(
             special->roms[i].valid_extensions :
             content_ctx->valid_extensions;
 
-         new_path        = (char*)malloc(new_path_size);
+         new_path                 = (char*)malloc(new_path_size);
 
-         temp_content[0] = new_path[0] = '\0';
+         temp_content[0]          = new_path[0] = '\0';
 
          if (!string_is_empty(path))
             strlcpy(temp_content, path, temp_content_size);
@@ -843,17 +855,16 @@ static bool content_file_init_extract(
                   new_path_size
                   ))
          {
-            size_t path_size = 1024 * sizeof(char);
-            char *str        = (char*)malloc(path_size);
+            char str[1024];
+            str[0] = '\0';
 
-            snprintf(str, path_size,
+            snprintf(str, sizeof(str),
                   "%s: %s.\n",
                   msg_hash_to_str(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                   temp_content);
             *error_string = strdup(str);
             free(temp_content);
-            free(str);
             free(new_path);
             return false;
          }
@@ -934,17 +945,14 @@ static bool content_file_load(
                   content_ctx, p_content,
                   i, path, (void**)&info[i].data, &len))
          {
-            size_t msg_size = 1024 * sizeof(char);
-            char *msg       = (char*)malloc(msg_size);
+            char msg[1024];
             msg[0]          = '\0';
 
-            snprintf(msg,
-                  msg_size,
+            snprintf(msg, sizeof(msg),
                   "%s \"%s\".\n",
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
             *error_string = strdup(msg);
-            free(msg);
             return false;
          }
 
@@ -981,13 +989,14 @@ static bool content_file_load(
             new_basedir[0]          = '\0';
             attributes.i            = 0;
 
-            RARCH_LOG("Core does not support VFS - copying to cache directory\n");
+            RARCH_LOG("[CONTENT LOAD]: Core does not support VFS - copying to cache directory\n");
 
             if (!string_is_empty(content_ctx->directory_cache))
                strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
             if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !is_path_accessible_using_standard_io(new_basedir))
             {
-               RARCH_WARN("Tried copying to cache directory, but "
+               RARCH_WARN("[CONTENT LOAD]: Tried copying to cache directory"
+                     ", but "
                      "cache directory was not set or found. "
                      "Setting cache directory to root of "
                      "writable app directory...\n");
@@ -1002,35 +1011,33 @@ static bool content_file_load(
              * but copying large files is not a good idea anyway */
             if (!filestream_read_file(path, &buf, &len))
             {
-               size_t msg_size = 1024 * sizeof(char);
-               char *msg       = (char*)malloc(msg_size);
+               char msg[1024];
                msg[0]          = '\0';
 
                snprintf(msg,
-                     msg_size,
+                     sizeof(msg),
                      "%s \"%s\". (during copy read)\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      path);
                *error_string = strdup(msg);
-               free(msg);
                return false;
             }
+
             if (!filestream_write_file(new_path, buf, len))
             {
-               size_t msg_size = 1024 * sizeof(char);
-               char *msg       = (char*)malloc(msg_size);
+               char msg[1024];
                msg[0]          = '\0';
 
                free(buf);
                snprintf(msg,
-                     msg_size,
+                     sizeof(msg),
                      "%s \"%s\". (during copy write)\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      path);
                *error_string = strdup(msg);
-               free(msg);
                return false;
             }
+
             free(buf);
 
             string_list_append(additional_path_allocs, new_path, attributes);
@@ -1046,7 +1053,7 @@ static bool content_file_load(
          }
 #endif
 
-         RARCH_LOG("%s\n", msg_hash_to_str(
+         RARCH_LOG("[CONTENT LOAD]: %s\n", msg_hash_to_str(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          strlcpy(p_content->pending_rom_crc_path,
                path, sizeof(p_content->pending_rom_crc_path));
@@ -1097,48 +1104,57 @@ retro_subsystem_info *content_file_init_subsystem(
       char **error_string,
       bool *ret)
 {
-   size_t path_size                           = 1024 * sizeof(char);
-   char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
             subsystem_data, (unsigned)subsystem_current_count,
             path_get(RARCH_PATH_SUBSYSTEM));
 
-   msg[0] = '\0';
-
    if (!special)
    {
-      snprintf(msg, path_size,
+      char msg[1024];
+      msg[0] = '\0';
+      snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
       *error_string = strdup(msg);
       goto error;
    }
 
-   if (special->num_roms && !subsystem)
+   if (special->num_roms)
    {
-      strlcpy(msg,
-            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
-            path_size
-            );
-      *error_string = strdup(msg);
-      goto error;
+      if (!subsystem)
+      {
+         char msg[1024];
+         msg[0] = '\0';
+         strlcpy(msg,
+               msg_hash_to_str(
+                  MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
+               sizeof(msg) 
+               );
+         *error_string = strdup(msg);
+         goto error;
+      }
+
+      if (special->num_roms != subsystem->size)
+      {
+         char msg[1024];
+         msg[0] = '\0';
+         snprintf(msg,
+               sizeof(msg),
+               "Libretro core requires %u content files for "
+               "subsystem \"%s\", but %u content files were provided.\n",
+               special->num_roms, special->desc,
+               (unsigned)subsystem->size);
+         *error_string = strdup(msg);
+         goto error;
+      }
    }
-   else if (special->num_roms && (special->num_roms != subsystem->size))
+   else if (subsystem && subsystem->size)
    {
+      char msg[1024];
+      msg[0] = '\0';
       snprintf(msg,
-            path_size,
-            "Libretro core requires %u content files for "
-            "subsystem \"%s\", but %u content files were provided.\n",
-            special->num_roms, special->desc,
-            (unsigned)subsystem->size);
-      *error_string = strdup(msg);
-      goto error;
-   }
-   else if (!special->num_roms && subsystem && subsystem->size)
-   {
-      snprintf(msg,
-            path_size,
+            sizeof(msg),
             "Libretro core takes no content for subsystem \"%s\", "
             "but %u content files were provided.\n",
             special->desc,
@@ -1148,12 +1164,10 @@ retro_subsystem_info *content_file_init_subsystem(
    }
 
    *ret = true;
-   free(msg);
    return special;
 
 error:
    *ret = false;
-   free(msg);
    return NULL;
 }
 
@@ -1261,39 +1275,8 @@ static bool content_file_init(
    return ret;
 }
 
-static void menu_content_environment_get(int *argc, char *argv[],
-      void *args, void *params_data)
-{
-   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
-   rarch_system_info_t *sys_info     = runloop_get_system_info();
-
-   if (!wrap_args)
-      return;
-
-   wrap_args->no_content       = sys_info->load_no_content;
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
-      wrap_args->verbose       = verbosity_is_enabled();
-
-   wrap_args->touched          = true;
-   wrap_args->config_path      = NULL;
-   wrap_args->sram_path        = NULL;
-   wrap_args->state_path       = NULL;
-   wrap_args->content_path     = NULL;
-
-   if (!path_is_empty(RARCH_PATH_CONFIG))
-      wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
-   if (!dir_is_empty(RARCH_DIR_SAVEFILE))
-      wrap_args->sram_path     = dir_get(RARCH_DIR_SAVEFILE);
-   if (!dir_is_empty(RARCH_DIR_SAVESTATE))
-      wrap_args->state_path    = dir_get(RARCH_DIR_SAVESTATE);
-   if (!path_is_empty(RARCH_PATH_CONTENT))
-      wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
-      wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
-         path_get(RARCH_PATH_CORE);
-
-}
+void menu_content_environment_get(int *argc, char *argv[],
+      void *args, void *params_data);
 
 /**
  * task_push_to_history_list:
@@ -1440,11 +1423,7 @@ static void task_push_to_history_list(
             entry.subsystem_name  = (char*)subsystem_name;
             entry.subsystem_roms  = (struct string_list*)path_get_subsystem_list();
 
-            command_playlist_push_write(
-                  playlist_hist, &entry,
-                  settings->bools.playlist_fuzzy_archive_match,
-                  settings->bools.playlist_use_old_format,
-                  settings->bools.playlist_compression);
+            command_playlist_push_write(playlist_hist, &entry);
          }
       }
 
@@ -1460,16 +1439,6 @@ static bool command_event_cmd_exec(
       bool launched_from_cli,
       char **error_string)
 {
-#if defined(HAVE_DYNAMIC)
-   content_ctx_info_t content_info;
-
-   content_info.argc        = 0;
-   content_info.argv        = NULL;
-   content_info.args        = NULL;
-   content_info.environ_get = NULL;
-   content_info.environ_get = menu_content_environment_get;
-#endif
-
    if (path_get(RARCH_PATH_CONTENT) != data)
    {
       path_clear(RARCH_PATH_CONTENT);
@@ -1478,10 +1447,19 @@ static bool command_event_cmd_exec(
    }
 
 #if defined(HAVE_DYNAMIC)
-   /* Loads content into currently selected core. */
-   if (!content_load(&content_info, p_content))
-      return false;
-   task_push_to_history_list(p_content, true, launched_from_cli, false);
+   {
+      content_ctx_info_t content_info;
+
+      content_info.argc        = 0;
+      content_info.argv        = NULL;
+      content_info.args        = NULL;
+      content_info.environ_get = menu_content_environment_get;
+
+      /* Loads content into currently selected core. */
+      if (!content_load(&content_info, p_content))
+         return false;
+      task_push_to_history_list(p_content, true, launched_from_cli, false);
+   }
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1517,7 +1495,7 @@ static bool firmware_update_status(
       firmware_info.directory.system = s;
    }
 
-   RARCH_LOG("Updating firmware status for: %s on %s\n",
+   RARCH_LOG("[CONTENT LOAD]: Updating firmware status for: %s on %s\n",
          core_info->path,
          firmware_info.directory.system);
 
@@ -1539,7 +1517,7 @@ static bool firmware_update_status(
             msg_hash_to_str(MSG_FIRMWARE),
             100, 500, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("Load content blocked. Reason: %s\n",
+      RARCH_LOG("[CONTENT LOAD]: Load content blocked. Reason: %s\n",
             msg_hash_to_str(MSG_FIRMWARE));
 
       return true;
@@ -1551,7 +1529,7 @@ static bool firmware_update_status(
 bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
-   content_state_t                 *p_content = (content_state_t*)&content_st;
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1564,10 +1542,12 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       return false;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1614,7 +1594,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -1647,19 +1627,24 @@ bool task_push_load_content_from_playlist_from_menu(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
    const char *path_dir_system                = settings->paths.directory_system;
+#ifndef HAVE_DYNAMIC
+   bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
+#endif
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1691,47 +1676,84 @@ bool task_push_load_content_from_playlist_from_menu(
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
 
-   path_set(RARCH_PATH_CORE, core_path);
-
    /* Is content required by this core? */
    if (fullpath)
       sys_info->load_no_content = false;
    else
       sys_info->load_no_content = true;
 
-   /* On targets that have no dynamic core loading support, we'd
-    * execute the new core from this point. If this returns false,
-    * we assume we can dynamically load the core. */
-   if (!command_event_cmd_exec(p_content,
-            fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
+#ifndef HAVE_DYNAMIC
+   /* Check whether specified core is already loaded
+    * > If so, content can be launched directly with
+    *   the currently loaded core */
+   if (!force_core_reload &&
+       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
    {
-      if (error_string)
-      {
-         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
-         free(error_string);
-      }
+      if (!content_info->environ_get)
+         content_info->environ_get = menu_content_environment_get;
 
-      retroarch_menu_running();
+      /* Register content path */
+      path_clear(RARCH_PATH_CONTENT);
+      if (!string_is_empty(fullpath))
+         path_set(RARCH_PATH_CONTENT, fullpath);
 
-      ret = false;
+      /* Load content */
+      ret = content_load(content_info, p_content);
+
+      if (!ret)
+         goto end;
+
+      /* Update content history */
+      task_push_to_history_list(p_content, true, false, false);
+
       goto end;
    }
+#endif
 
-   /* Load core */
+   /* Specified core is not loaded
+    * > Load it */
+   path_set(RARCH_PATH_CORE, core_path);
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+
+   /* Load content
+    * > On targets that do not support dynamic core loading,
+    *   command_event_cmd_exec() will fork a new instance */
+   ret = command_event_cmd_exec(p_content,
+         fullpath, &content_ctx, false, &error_string);
+
+   if (!ret)
+      goto end;
+
 #ifdef HAVE_COCOATOUCH
-    /* This seems to be needed for iOS for some reason to show the 
-     * quick menu after the menu is shown */
+   /* This seems to be needed for iOS for some reason
+    * to show the quick menu after the menu is shown */
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
-#else
+
+#ifndef HAVE_DYNAMIC
+   /* No dynamic core loading support: if we reach
+    * this point then a new instance has been
+    * forked - have to shut down this one */
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
    retroarch_menu_running_finished(true);
 #endif
 
 end:
+   /* Handle load content failure */
+   if (!ret)
+   {
+      if (error_string)
+      {
+         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
+         free(error_string);
+      }
+
+      retroarch_menu_running();
+   }
+
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
    if (content_ctx.name_bps)
@@ -1749,8 +1771,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1762,10 +1783,12 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       return false;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1813,7 +1836,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -1880,20 +1903,34 @@ bool task_push_load_content_with_new_core_from_menu(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
    const char *path_dir_system                = settings->paths.directory_system;
+#ifndef HAVE_DYNAMIC
+   bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
+
+   /* Check whether specified core is already loaded
+    * > If so, we can skip loading the core and
+    *   just load the content directly */
+   if (!force_core_reload &&
+       (type == CORE_TYPE_PLAIN) &&
+       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+      return task_push_load_content_with_core_from_menu(
+            fullpath, content_info,
+            type, cb, user_data);
+#endif
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1943,7 +1980,7 @@ bool task_push_load_content_with_new_core_from_menu(
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -1981,13 +2018,15 @@ end:
 }
 #endif
 
-static bool task_load_content_callback(content_ctx_info_t *content_info,
-      bool loading_from_menu, bool loading_from_cli, bool loading_from_companion_ui)
+static bool task_load_content_internal(
+      content_ctx_info_t *content_info,
+      bool loading_from_menu,
+      bool loading_from_cli,
+      bool loading_from_companion_ui)
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = false;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1999,10 +2038,12 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    const char *path_dir_cache                 = settings->paths.directory_cache;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -2023,8 +2064,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
       content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
 
-      if (!string_is_empty(path_dir_system))
-         content_ctx.directory_system         = strdup(path_dir_system);
       if (!string_is_empty(path_dir_cache))
          content_ctx.directory_cache          = strdup(path_dir_cache);
       if (!string_is_empty(system->valid_extensions))
@@ -2093,7 +2132,7 @@ end:
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -2114,7 +2153,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       void *user_data)
 {
    global_t *global            = global_get_ptr();
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
@@ -2134,7 +2173,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 
-   _launched_from_cli = false;
+   global->launched_from_cli = false;
 
    if (global)
    {
@@ -2145,7 +2184,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    }
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, true))
+   if (!task_load_content_internal(content_info, true, false, true))
       return false;
 
 #ifdef HAVE_MENU
@@ -2164,11 +2203,7 @@ bool task_push_load_content_from_cli(
       retro_task_callback_t cb,
       void *user_data)
 {
-   /* Load content */
-   if (!task_load_content_callback(content_info, true, true, false))
-      return false;
-
-   return true;
+   return task_load_content_internal(content_info, true, true, false);
 }
 
 bool task_push_start_builtin_core(
@@ -2185,7 +2220,7 @@ bool task_push_start_builtin_core(
    retroarch_set_current_core_type(type, true);
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, false))
+   if (!task_load_content_internal(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2194,38 +2229,6 @@ bool task_push_start_builtin_core(
    /* Push quick menu onto menu stack */
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-
-   return true;
-}
-
-bool task_push_load_content_with_current_core_from_companion_ui(
-      const char *fullpath,
-      content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      retro_task_callback_t cb,
-      void *user_data)
-{
-   content_state_t *p_content  = (content_state_t*)&content_st;
-
-   path_set(RARCH_PATH_CONTENT, fullpath);
-
-   /* TODO/FIXME: Enable setting of these values
-    * via function arguments */
-   p_content->companion_ui_db_name[0] = '\0';
-   p_content->companion_ui_crc32[0]   = '\0';
-
-   /* Load content
-    * > TODO/FIXME: Set loading_from_companion_ui 'false' for
-    *   now, until someone can implement the required higher
-    *   level functionality in 'win32_common.c' and 'ui_cocoa.m' */
-   if (!task_load_content_callback(content_info, true, false, false))
-      return false;
-
-   /* Push quick menu onto menu stack */
-#ifdef HAVE_MENU
-   if (type != CORE_TYPE_DUMMY)
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
    return true;
@@ -2241,7 +2244,7 @@ bool task_push_load_content_with_core_from_menu(
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, false))
+   if (!task_load_content_internal(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2256,6 +2259,29 @@ bool task_push_load_content_with_core_from_menu(
    return true;
 }
 
+bool task_push_load_content_with_current_core_from_companion_ui(
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
+      retro_task_callback_t cb,
+      void *user_data)
+{
+   content_state_t  *p_content = content_state_get_ptr();
+
+   /* TODO/FIXME: Enable setting of these values
+    * via function arguments */
+   p_content->companion_ui_db_name[0] = '\0';
+   p_content->companion_ui_crc32[0]   = '\0';
+
+   /* Load content
+    * > TODO/FIXME: Set loading_from_companion_ui 'false' for
+    *   now, until someone can implement the required higher
+    *   level functionality in 'win32_common.c' and 'ui_cocoa.m' */
+   return task_push_load_content_with_core_from_menu(fullpath,
+         content_info, type, cb, user_data);
+}
+
+
 bool task_push_load_subsystem_with_core_from_menu(
       const char *fullpath,
       content_ctx_info_t *content_info,
@@ -2263,12 +2289,12 @@ bool task_push_load_subsystem_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    p_content->pending_subsystem_init = true;
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, false))
+   if (!task_load_content_internal(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2287,7 +2313,7 @@ void content_get_status(
       bool *contentless,
       bool *is_inited)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    *contentless = p_content->core_does_not_need_content;
    *is_inited   = p_content->is_inited;
@@ -2297,7 +2323,7 @@ void content_get_status(
 void content_clear_subsystem(void)
 {
    unsigned i;
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    p_content->pending_subsystem_rom_id    = 0;
    p_content->pending_subsystem_init      = false;
@@ -2312,25 +2338,12 @@ void content_clear_subsystem(void)
    }
 }
 
-/* Checks if launched from the commandline */
-bool content_launched_from_cli(void)
-{
-   return _launched_from_cli;
-}
-
-/* Get the current subsystem */
-int content_get_subsystem(void)
-{
-   content_state_t *p_content = (content_state_t*)&content_st;
-   return p_content->pending_subsystem_id;
-}
-
 /* Set the current subsystem*/
 void content_set_subsystem(unsigned idx)
 {
    const struct retro_subsystem_info *subsystem;
    rarch_system_info_t                  *system = runloop_get_system_info();
-   content_state_t                   *p_content = (content_state_t*)&content_st;
+   content_state_t  *p_content                  = content_state_get_ptr();
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
@@ -2349,7 +2362,7 @@ void content_set_subsystem(unsigned idx)
       p_content->pending_subsystem_rom_num = subsystem->num_roms;
    }
 
-   RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
+   RARCH_LOG("[Subsystem]: Setting current subsystem to: %d(%s) Content amount: %d\n",
       p_content->pending_subsystem_id,
       p_content->pending_subsystem_ident,
       p_content->pending_subsystem_rom_num);
@@ -2409,15 +2422,15 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    size_t pending_size        = PATH_MAX_LENGTH * sizeof(char);
    p_content->pending_subsystem_roms[p_content->pending_subsystem_rom_id] = (char*)malloc(pending_size);
 
    strlcpy(p_content->pending_subsystem_roms[
          p_content->pending_subsystem_rom_id],
          path, pending_size);
-   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident:"
-         " %s rom id: %d, rom path: %s\n",
+   RARCH_LOG("[Subsystem]: Subsystem id: %d Subsystem ident:"
+         " %s Content ID: %d, Content Path: %s\n",
          p_content->pending_subsystem_id,
          p_content->pending_subsystem_ident,
          p_content->pending_subsystem_rom_id,
@@ -2426,54 +2439,47 @@ void content_add_subsystem(const char* path)
    p_content->pending_subsystem_rom_id++;
 }
 
-/* Get the current subsystem rom id */
-unsigned content_get_subsystem_rom_id(void)
-{
-   content_state_t *p_content = (content_state_t*)&content_st;
-   return p_content->pending_subsystem_rom_id;
-}
-
 void content_set_does_not_need_content(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    p_content->core_does_not_need_content = true;
 }
 
 void content_unset_does_not_need_content(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    p_content->core_does_not_need_content = false;
 }
 
 uint32_t content_get_crc(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    if (p_content->pending_rom_crc)
    {
       p_content->pending_rom_crc   = false;
       p_content->rom_crc           = file_crc32(0,
             (const char*)p_content->pending_rom_crc_path);
-      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
+      RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
    }
    return p_content->rom_crc;
 }
 
 char* content_get_subsystem_rom(unsigned index)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    return p_content->pending_subsystem_roms[index];
 }
 
 bool content_is_inited(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    return p_content->is_inited;
 }
 
 void content_deinit(void)
 {
    unsigned i;
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
 
    if (p_content->temporary_content)
    {
@@ -2481,10 +2487,10 @@ void content_deinit(void)
       {
          const char *path = p_content->temporary_content->elems[i].data;
 
-         RARCH_LOG("%s: %s.\n",
+         RARCH_LOG("[CONTENT LOAD]: %s: %s.\n",
                msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
          if (filestream_delete(path) != 0)
-            RARCH_ERR("%s: %s.\n",
+            RARCH_ERR("[CONTENT LOAD]: %s: %s.\n",
                   msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
                   path);
       }
@@ -2501,7 +2507,7 @@ void content_deinit(void)
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    if (!p_content->pending_subsystem_init)
       return;
 
@@ -2515,7 +2521,7 @@ void content_set_subsystem_info(void)
 bool content_init(void)
 {
    content_information_ctx_t content_ctx;
-   content_state_t *p_content                 = (content_state_t*)&content_st;
+   content_state_t *p_content                 = content_state_get_ptr();
 
    bool ret                                   = true;
    char *error_string                         = NULL;
@@ -2531,10 +2537,12 @@ bool content_init(void)
    p_content->temporary_content               = string_list_new();
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.temporary_content              = p_content->temporary_content;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -2610,13 +2618,16 @@ bool content_init(void)
    {
       if (ret)
       {
-         RARCH_LOG("%s\n", error_string);
+         RARCH_LOG("[CONTENT LOAD]: %s\n", error_string);
       }
       else
       {
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
       }
-      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      /* Do not flush the message queue here
+       * > This allows any core-generated error messages
+       *   to propagate through to the frontend */
+      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(error_string);
    }
 

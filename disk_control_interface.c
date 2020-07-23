@@ -42,7 +42,8 @@ static void disk_control_reset_callback(
    if (!disk_control)
       return;
 
-   memset(&disk_control->cb, 0, sizeof(struct retro_disk_control_ext_callback));
+   memset(&disk_control->cb, 0,
+         sizeof(struct retro_disk_control_ext_callback));
 }
 
 /* Set v0 disk interface callback functions */
@@ -488,6 +489,7 @@ bool disk_control_append_image(
       disk_control_interface_t *disk_control,
       const char *image_path)
 {
+   bool initial_disk_ejected   = false;
    unsigned initial_index      = 0;
    unsigned new_index          = 0;
    const char *image_filename  = NULL;
@@ -517,11 +519,15 @@ bool disk_control_append_image(
    if (string_is_empty(image_filename))
       return false;
 
+   /* Get initial disk eject state */
+   initial_disk_ejected = disk_control_get_eject_state(disk_control);
+
    /* Cache initial image index */
    initial_index = disk_control->cb.get_image_index();
 
-   /* Eject disk */
-   if (!disk_control_set_eject_state(disk_control, true, false))
+   /* If tray is currently closed, eject disk */
+   if (!initial_disk_ejected &&
+       !disk_control_set_eject_state(disk_control, true, false))
       goto error;
 
    /* Append image */
@@ -541,8 +547,10 @@ bool disk_control_append_image(
    if (!disk_control_set_index(disk_control, new_index, false))
       goto error;
 
-   /* Insert disk */
-   if (!disk_control_set_eject_state(disk_control, false, false))
+   /* If tray was initially closed, insert disk
+    * (i.e. leave system in the state we found it) */
+   if (!initial_disk_ejected &&
+       !disk_control_set_eject_state(disk_control, false, false))
       goto error;
 
    /* Display log */
@@ -572,7 +580,8 @@ error:
    if (!disk_control->cb.get_eject_state())
       disk_control_set_eject_state(disk_control, true, false);
    disk_control_set_index(disk_control, initial_index, false);
-   disk_control_set_eject_state(disk_control, false, false);
+   if (!initial_disk_ejected)
+      disk_control_set_eject_state(disk_control, false, false);
 
    snprintf(
          msg, sizeof(msg), "%s: %s",
@@ -656,7 +665,9 @@ error:
  *   if functionality is supported by core
  * NOTE: Must be called immediately after
  * loading content */
-bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
+bool disk_control_verify_initial_index(
+      disk_control_interface_t *disk_control,
+      bool verbosity)
 {
    bool success         = false;
    unsigned image_index = 0;
@@ -714,6 +725,8 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
                image_index + 1,
                image_path);
 
+      /* Ignore 'verbosity' setting - errors should
+       * always be displayed */
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FAILED_TO_SET_INITIAL_DISK),
             0, 60,
@@ -756,11 +769,12 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
        * it is likely other notifications will be
        * generated before setting the disk index, and
        * we do not want to 'overwrite' them */
-      runloop_msg_queue_push(
-            msg,
-            0, msg_duration,
-            false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      if (verbosity)
+         runloop_msg_queue_push(
+               msg,
+               0, msg_duration,
+               false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    return success;
@@ -768,7 +782,8 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
 
 /* Saves current disk index to file, if supported
  * by current core */
-bool disk_control_save_image_index(disk_control_interface_t *disk_control)
+bool disk_control_save_image_index(
+      disk_control_interface_t *disk_control)
 {
    if (!disk_control)
       return false;

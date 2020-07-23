@@ -53,48 +53,6 @@
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
-#if defined(ANDROID)
-#define DEFAULT_MAX_PADS 8
-#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(_3DS)
-#define DEFAULT_MAX_PADS 1
-#elif defined(SWITCH) || defined(HAVE_LIBNX)
-#define DEFAULT_MAX_PADS 8
-#elif defined(WIIU)
-#ifdef WIIU_HID
-#define DEFAULT_MAX_PADS 16
-#else
-#define DEFAULT_MAX_PADS 5
-#endif
-#elif defined(DJGPP)
-#define DEFAULT_MAX_PADS 1
-#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(XENON)
-#define DEFAULT_MAX_PADS 4
-#elif defined(VITA) || defined(SN_TARGET_PSP2)
-#define DEFAULT_MAX_PADS 4
-#elif defined(PSP)
-#define DEFAULT_MAX_PADS 1
-#elif defined(PS2)
-#define DEFAULT_MAX_PADS 2
-#elif defined(GEKKO) || defined(HW_RVL)
-#define DEFAULT_MAX_PADS 4
-#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
-#define DEFAULT_MAX_PADS 8
-#elif defined(__QNX__)
-#define DEFAULT_MAX_PADS 8
-#elif defined(__CELLOS_LV2__)
-#define DEFAULT_MAX_PADS 7
-#elif defined(_XBOX)
-#define DEFAULT_MAX_PADS 4
-#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
-#define DEFAULT_MAX_PADS 4
-#elif defined(DINGUX)
-#define DEFAULT_MAX_PADS 2
-#else
-#define DEFAULT_MAX_PADS 16
-#endif
-
 #if defined(GEKKO)
 #define DEFAULT_MOUSE_SCALE 1
 #endif
@@ -258,6 +216,18 @@
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
+/* Specifies whether to 'reload' (fork and quit)
+ * RetroArch when launching content with the
+ * currently loaded core
+ * > Only relevant on platforms without dynamic core
+ *   loading support
+ * > Setting this to 'false' will decrease loading
+ *   times when required core is already running,
+ *   but may cause stability issues (if core misbehaves) */
+#ifndef HAVE_DYNAMIC
+#define DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT true
+#endif
+
 /* Forcibly disable composition.
  * Only valid on Windows Vista/7/8 for now. */
 #define DEFAULT_DISABLE_COMPOSITION false
@@ -413,6 +383,7 @@
 #define DEFAULT_OZONE_COLOR_THEME 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
+#define DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME true
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
 #endif
 
@@ -644,6 +615,8 @@ static const unsigned input_backtouch_enable       = false;
 static const unsigned input_backtouch_toggle       = false;
 #endif
 
+#define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
+
 #define DEFAULT_SHOW_PHYSICAL_INPUTS true
 
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
@@ -754,6 +727,56 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_MENU_ENABLE_WIDGETS false
 #endif
 
+/* Display an animation when loading content
+ * > Currently implemented only as a widget */
+#define DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION DEFAULT_MENU_ENABLE_WIDGETS
+
+/* Display a notification when successfully
+ * connecting/disconnecting an autoconfigured
+ * controller
+ * > Disabled by default on the Switch */
+#if defined(HAVE_LIBNX) && defined(HAVE_GFX_WIDGETS)
+#define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG false
+#else
+#define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
+#endif
+
+#if defined(HAVE_SCREENSHOTS)
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN true
+#else
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN false
+#endif
+
+/* Display a notification when cheats are being
+ * applied */
+#define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
+
+/* Display a notification when loading an
+ * input remap file */
+#define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true
+
+/* Display a notification when loading a
+ * configuration override file */
+#define DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD true
+
+/* Display a notification when automatically restoring
+ * at launch the last used disk of multi-disk content */
+#define DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK true
+
+/* Display a notification when fast forwarding
+ * content */
+#define DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD true
+
+/*Display a notification when taking a screenshot*/
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT true
+
+/*Desired duration of the screenshot notification*/
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION 0
+
+/* Display a white flashing effect with the desired 
+ * duration when taking a screenshot*/
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
@@ -818,6 +841,9 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* FPS display will be updated at the set interval (in frames) */
 #define DEFAULT_FPS_UPDATE_INTERVAL 256
+
+/* Memory status display will be updated at the set interval (in frames) */
+#define DEFAULT_MEMORY_UPDATE_INTERVAL 256
 
 /* Enables displaying the current frame count. */
 #define DEFAULT_FRAMECOUNT_SHOW false
@@ -929,7 +955,12 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save state files, compress
  * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* TODO/FIXME Apparently this is an issue on UWP for now, so disable it for now */
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+#else
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION true
+#endif
 
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0
@@ -956,10 +987,27 @@ static const bool stdin_cmd_enable = false;
 
 static const uint16_t network_remote_base_port = 55400;
 
-#if defined(ANDROID) || defined(IOS)
-static const bool network_on_demand_thumbnails = true;
+#define DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE true
+#define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
+
+/* Automatically create a backup whenever a core is
+ * updated via the online updater
+ * > Enable by default on all modern platforms with
+ *   online updater support */
+#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS))
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP true
 #else
-static const bool network_on_demand_thumbnails = false;
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
+#endif
+/* Number of automatic core backups to retain
+ * (oldest backup will be deleted when creating
+ * a new one) */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
+
+#if defined(ANDROID) || defined(IOS)
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
+#else
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 #endif
 
 /* Number of entries that will be kept in content history playlist file. */
@@ -1071,6 +1119,8 @@ static const unsigned input_bind_timeout = 5;
 
 static const unsigned input_bind_hold = 2;
 
+#define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
+
 static const unsigned gfx_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;
@@ -1078,7 +1128,8 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
-static const unsigned menu_timedate_style = MENU_TIMEDATE_STYLE_DDMM_HM;
+#define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
+#define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #endif
 
 static const bool xmb_vertical_thumbnails = false;
@@ -1259,5 +1310,19 @@ static const bool enable_device_vibration    = false;
 #define DEFAULT_AI_SERVICE_MODE 1
 
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE true
+#else
+#define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE false
+#endif
+
+#if defined(HAVE_IMAGEVIEWER)
+#define DEFAULT_BUILTIN_IMAGEVIEWER_ENABLE true
+#else
+#define DEFAULT_BUILTIN_IMAGEVIEWER_ENABLE false
+#endif
+
+#define DEFAULT_FILTER_BY_CURRENT_CORE false
 
 #endif

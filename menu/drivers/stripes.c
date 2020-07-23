@@ -123,6 +123,7 @@ enum
    STRIPES_TEXTURE_LOADSTATE,
    STRIPES_TEXTURE_UNDO,
    STRIPES_TEXTURE_CORE_INFO,
+   STRIPES_TEXTURE_BLUETOOTH,
    STRIPES_TEXTURE_WIFI,
    STRIPES_TEXTURE_CORE_OPTIONS,
    STRIPES_TEXTURE_INPUT_REMAPPING_OPTIONS,
@@ -739,8 +740,8 @@ static void stripes_render_keyboard(
                userdata,
                video_width,
                video_height,
-               video_width  / 2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-               video_height / 2.0 + ptr_height*1.5 + line_y,
+               video_width  / 2.0f - (11 * ptr_width) / 2.0f + (i % 11) * ptr_width,
+               video_height / 2.0f + ptr_height * 1.5f + line_y,
                ptr_width, ptr_height,
                video_width,
                video_height,
@@ -751,14 +752,14 @@ static void stripes_render_keyboard(
       }
 
       gfx_display_draw_text(stripes->font, grid[i],
-            video_width / 2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
-            video_height / 2.0 + ptr_height + line_y + stripes->font->size / 3,
+            video_width / 2.0f - (11 * ptr_width) / 2.0f + (i % 11) * ptr_width + ptr_width / 2.0f,
+            video_height / 2.0f + ptr_height + line_y + stripes->font->size / 3,
             video_width,
             video_height,
             0xffffffff,
             TEXT_ALIGN_CENTER,
             1.0f,
-            false, 0, false);
+            false, 0.0f, false);
    }
 }
 
@@ -849,7 +850,7 @@ static void stripes_render_messagebox_internal(
          userdata,
          video_width,
          video_height,
-         x - longest_width/2 - stripes->margins_dialog,
+         x - longest_width / 2 - stripes->margins_dialog,
          y + stripes->margins_slice - stripes->margins_dialog,
          256, 256,
          longest_width + stripes->margins_dialog * 2,
@@ -857,7 +858,7 @@ static void stripes_render_messagebox_internal(
          video_width,
          video_height,
          NULL,
-         stripes->margins_slice, 1.0,
+         stripes->margins_slice, 1.0f,
          stripes->textures.list[STRIPES_TEXTURE_DIALOG_SLICE]);
 
    for (i = 0; i < list->size; i++)
@@ -866,13 +867,13 @@ static void stripes_render_messagebox_internal(
 
       if (msg)
          gfx_display_draw_text(stripes->font, msg,
-               x - longest_width/2.0,
-               y + (i+0.75) * line_height,
+               x - longest_width / 2.0f,
+               y + (i + 0.75f) * line_height,
                video_width,
                video_height,
                0x444444ff,
                TEXT_ALIGN_LEFT,
-               1.0f, false, 0, false);
+               1.0f, false, 0.0f, false);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -903,7 +904,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   entry_type = menu_entry_get_type_new(&entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
    {
@@ -998,7 +999,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 
       tmp_new[0]                     = '\0';
 
-      while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
+      while ((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
          *scrub_char_pointer = '_';
 
       /* Look for thumbnail file with this scrubbed filename */
@@ -1192,18 +1193,16 @@ static unsigned stripes_get_system_tab(stripes_handle_t *stripes, unsigned i)
 static void stripes_selection_pointer_changed(
       stripes_handle_t *stripes, bool allow_animations)
 {
+   uintptr_t tag;
    unsigned i, end, height;
-   gfx_animation_ctx_tag tag;
    menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
-   menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    const char *thumb_ident    = stripes_thumbnails_ident('R');
    const char *lft_thumb_ident= stripes_thumbnails_ident('L');
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    menu_entry_init(&entry);
 
    if (!stripes)
@@ -1839,7 +1838,8 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !string_ends_with(path, ".lpl"))
+      if (!path || !string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -1937,7 +1937,8 @@ static void stripes_context_reset_horizontal_list(
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !string_ends_with(path, ".lpl"))
+      if (!path || !string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
          continue;
 
       {
@@ -2247,13 +2248,13 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_SETTING_ACTION_RUN:
          return stripes->textures.list[STRIPES_TEXTURE_RUN];
       case MENU_SETTING_ACTION_CLOSE:
+      case MENU_SETTING_ACTION_CLOSE_HORIZONTAL:
          return stripes->textures.list[STRIPES_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_SAVESTATE:
          return stripes->textures.list[STRIPES_TEXTURE_SAVESTATE];
       case MENU_SETTING_ACTION_LOADSTATE:
          return stripes->textures.list[STRIPES_TEXTURE_LOADSTATE];
       case FILE_TYPE_RDB_ENTRY:
-      case MENU_SETTING_ACTION_CORE_INFORMATION:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
@@ -2280,6 +2281,8 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
          return stripes->textures.list[STRIPES_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_INFO];
+      case MENU_BLUETOOTH:
+         return stripes->textures.list[STRIPES_TEXTURE_BLUETOOTH];
       case MENU_WIFI:
          return stripes->textures.list[STRIPES_TEXTURE_WIFI];
 #ifdef HAVE_NETWORKING
@@ -2403,7 +2406,7 @@ static int stripes_draw_item(
    if (icon_x < -half_size || icon_x > width)
       goto iterate;
 
-   entry_type = menu_entry_get_type_new(entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
@@ -3620,6 +3623,8 @@ static const char *stripes_texture_path(unsigned id)
          return "undo.png";
       case STRIPES_TEXTURE_CORE_INFO:
          return "core-infos.png";
+      case STRIPES_TEXTURE_BLUETOOTH:
+         return "bluetooth.png";
       case STRIPES_TEXTURE_WIFI:
          return "wifi.png";
       case STRIPES_TEXTURE_CORE_OPTIONS:
@@ -3898,7 +3903,7 @@ static void stripes_list_insert(void *userdata,
 
 static void stripes_list_clear(file_list_t *list)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t)list;
+   uintptr_t tag = (uintptr_t)list;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -3913,8 +3918,8 @@ static void stripes_list_free(file_list_t *list, size_t a, size_t b)
 static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
-   size_t i, j = 0;
-   gfx_animation_ctx_tag tag = (uintptr_t)dst;
+   size_t i, j   = 0;
+   uintptr_t tag = (uintptr_t)dst;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -4510,6 +4515,5 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_update_savestate_thumbnail_image,
    NULL,                                     /* pointer_down */
    stripes_pointer_up,                       /* pointer_up   */
-   NULL,                                     /* get_load_content_animation_data   */
    generic_menu_entry_action
 };

@@ -263,7 +263,7 @@ static void ctr_font_render_line(
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
          ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
@@ -334,25 +334,18 @@ static void ctr_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
+      unsigned msg_len  = delim ?
+         (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (delim)
-      {
-         unsigned msg_len = delim - msg;
-         ctr_font_render_line(ctr, font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               width, height, text_align);
-         msg += msg_len + 1;
-         lines++;
-      }
-      else
-      {
-         unsigned msg_len = strlen(msg);
-         ctr_font_render_line(ctr, font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               width, height, text_align);
+      ctr_font_render_line(ctr, font, msg, msg_len,
+            scale, color, pos_x, pos_y - (float)lines * line_height,
+            width, height, text_align);
+      if (!delim)
          break;
-      }
+
+      msg += msg_len + 1;
+      lines++;
    }
 }
 

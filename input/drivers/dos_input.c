@@ -26,6 +26,8 @@
 #include "../input_keymaps.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
 
+#define MAX_KEYS LAST_KEYCODE + 1
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -34,9 +36,8 @@ typedef struct dos_input
    const input_device_driver_t *joypad;
 } dos_input_t;
 
-#define MAX_KEYS LAST_KEYCODE + 1
-
 /* First ports are used to keeping track of gamepad states. Last port is used for keyboard state */
+/* TODO/FIXME - static globals */
 static uint16_t dos_key_state[DEFAULT_MAX_PADS+1][MAX_KEYS];
 
 static bool dos_keyboard_port_input_pressed(
@@ -86,29 +87,16 @@ static int16_t dos_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = dos->joypad->state(
+                  joypad_info, binds[port], port);
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-               
-               if ((uint16_t)joykey != NO_BTN && dos->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
-               }
-               if (((float)abs(dos->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               {
-                  ret |= (1 << i);
-                  continue;
-               }
-               if (dos_keyboard_port_input_pressed(binds[port], i))
-               {
-                  ret |= (1 << i);
-                  continue;
+                  if (id < RARCH_BIND_LIST_END)
+                     if (dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[binds[i].key]])
+                        ret |= (1 << i);
                }
             }
 
@@ -116,25 +104,22 @@ static int16_t dos_input_state(void *data,
          }
          else
          {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-            if ((uint16_t)joykey != NO_BTN && dos->joypad->button(
-                     joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
-            if (((float)abs(dos->joypad->axis(
-                           joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
-
-            if (dos_keyboard_port_input_pressed(binds[port], id))
-               return true;
+            if (binds[port][id].valid)
+            {
+               if (
+                     button_is_pressed(
+                        dos->joypad, joypad_info, binds[port],
+                        port, id)
+                     || dos_keyboard_port_input_pressed(binds[port], id)
+                  )
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return dos_keyboard_port_input_pressed(binds[port], id);
+         if (id < RARCH_BIND_LIST_END)
+            return (dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[binds[id].key]]);
+         break;
    }
 
    return 0;

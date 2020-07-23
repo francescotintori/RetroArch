@@ -48,6 +48,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
+#include <time/rtime.h>
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -92,9 +93,9 @@ typedef struct verbosity_state
 #endif
 } verbosity_state_t;
 
+/* TODO/FIXME - static public global variables */
 static verbosity_state_t main_verbosity_st;
-
-static unsigned verbosity_log_level                 = 
+static unsigned verbosity_log_level           = 
 DEFAULT_FRONTEND_LOG_LEVEL;
 
 #ifdef HAVE_LIBNX
@@ -178,7 +179,7 @@ void retro_main_log_file_init(const char *path, bool append)
    g_verbosity->initialized = true;
 
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
-   g_verbosity->buf = calloc(1, 0x4000);
+   g_verbosity->buf         = calloc(1, 0x4000);
    setvbuf(g_verbosity->fp, (char*)g_verbosity->buf, _IOFBF, 0x4000);
 }
 
@@ -257,13 +258,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
       FILE *fp = (FILE*)g_verbosity->fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
-      int ret;
       char buffer[256];
       buffer[0] = '\0';
-      ret = vsnprintf(buffer, sizeof(buffer), fmt, ap);
 
-      /* ensure null termination and line break in error case */
-      if (ret < 0)
+      /* Ensure null termination and line break in error case */
+      if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
       {
          int end;
          buffer[sizeof(buffer) - 1]  = '\0';
@@ -428,11 +427,13 @@ void rarch_log_file_init(
    if (string_is_empty(timestamped_log_file_name))
    {
       char format[256];
-      time_t cur_time      = time(NULL);
-      const struct tm *tm_ = localtime(&cur_time);
+      struct tm tm_;
+      time_t cur_time = time(NULL);
+
+      rtime_localtime(&cur_time, &tm_);
 
       format[0] = '\0';
-      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", tm_);
+      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
       fill_pathname_noext(timestamped_log_file_name, format,
             ".log",
             sizeof(timestamped_log_file_name));
@@ -465,24 +466,21 @@ void rarch_log_file_init(
    if (g_verbosity->override_active)
    {
       /* Get log directory */
-      const char *last_slash           = 
-         find_last_slash(g_verbosity->override_path);
+      const char *override_path        = g_verbosity->override_path;
+      const char *last_slash           = find_last_slash(override_path);
 
       if (last_slash)
       {
          char tmp_buf[PATH_MAX_LENGTH] = {0};
-         size_t path_length            = last_slash + 1 - 
-            g_verbosity->override_path;
+         size_t path_length            = last_slash + 1 - override_path;
 
          if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
-            strlcpy(tmp_buf, g_verbosity->override_path,
-                  path_length * sizeof(char));
+            strlcpy(tmp_buf, override_path, path_length * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));
       }
 
       /* Get log file path */
-      strlcpy(log_file_path, g_verbosity->override_path,
-            sizeof(log_file_path));
+      strlcpy(log_file_path, override_path, sizeof(log_file_path));
    }
    else if (!string_is_empty(log_dir))
    {

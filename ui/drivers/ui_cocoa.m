@@ -136,11 +136,13 @@ static void app_terminate(void)
             pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
 
-            // FIXME: Disable clipping until graphical offset issues are fixed
-            //NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
-            //if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number) {
-            //  return;
-            //}
+            /* FIXME: Disable clipping until graphical offset issues 
+             * are fixed */
+#if 0
+            NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
+            if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number)
+               return;
+#endif
 
             /* Relative */
             apple->mouse_rel_x += (int16_t)event.deltaX;
@@ -199,8 +201,9 @@ static void app_terminate(void)
 
 @end
 
+/* TODO/FIXME - static global variables */
 static int waiting_argc;
-static char** waiting_argv;
+static char **waiting_argv;
 
 @implementation RetroArch_OSX
 
@@ -348,7 +351,7 @@ static char** waiting_argv;
 
    if (mode.width > 0)
    {
-      // HACK(sgc): ensure MTKView posts a drawable resize event
+      /* HACK(sgc): ensure MTKView posts a drawable resize event */
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
@@ -393,7 +396,8 @@ static char** waiting_argv;
 
        task_queue_check();
 
-       while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+       while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) 
+             == kCFRunLoopRunHandledSource);
        if (ret == -1)
        {
 #ifdef HAVE_QT
@@ -717,6 +721,7 @@ ui_companion_driver_t ui_companion_cocoa = {
    NULL, /* render_messagebox */
    ui_companion_cocoa_get_main_window,
    NULL, /* log_msg */
+   NULL, /* is_active */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

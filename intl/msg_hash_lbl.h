@@ -205,6 +205,10 @@ MSG_HASH(
    "camera_driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_DRIVER,
+   "bluetooth_driver"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST,
    "cb_core_content_dirs_list"
    )
@@ -361,6 +365,10 @@ MSG_HASH(
    "cheevos_username"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "cheevos_unlock_sound_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,
    "cheevos_verbose_enable"
    )
@@ -449,6 +457,26 @@ MSG_HASH(
    "core_information"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_CREATE_BACKUP,
+   "core_create_backup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
+   "core_restore_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST,
+   "deferred_core_restore_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,
+   "core_delete_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST,
+   "deferred_core_delete_backup_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DISC_INFORMATION,
    "disc_information"
    )
@@ -493,12 +521,28 @@ MSG_HASH(
    "core_updater_auto_extract_archive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "core_updater_show_experimental_cores"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,
+   "core_updater_auto_backup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "core_updater_auto_backup_history_size"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
    "core_updater_buildbot_url"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_UPDATER_LIST,
    "core_updater_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_MANAGER_LIST,
+   "core_manager_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CPU_ARCHITECTURE,
@@ -729,8 +773,16 @@ MSG_HASH(
    "deferred_core_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST,
+   "deferred_core_information_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
    "core_updater"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
+   "deferred_core_manager_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST,
@@ -841,6 +893,10 @@ MSG_HASH(
    "deferred_onscreen_notifications_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST,
+   "deferred_onscreen_notifications_views_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST,
    "deferred_playlist_settings"
    )
@@ -945,6 +1001,10 @@ MSG_HASH(
    "deferred_crt_switchres_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST,
+   "deferred_bluetooth_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,
    "deferred_wifi_settings_list"
    )
@@ -1036,6 +1096,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
    "dummy_on_core_shutdown"
    )
+#ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "always_reload_core_on_run_content"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
    "menu_dynamic_wallpaper_enable"
@@ -1269,6 +1335,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN,
    "input_hotkey_binds_begin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "input_hotkey_block_delay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
@@ -1539,6 +1609,10 @@ MSG_HASH(
    "ozone_truncate_playlist_name"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "ozone_sort_after_truncate_playlist_name"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA,
    "ozone_scroll_content_metadata"
    )
@@ -1779,6 +1853,10 @@ MSG_HASH(
    "no_core_information_available"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NO_CORE_BACKUPS_AVAILABLE,
+   "no_core_backups_available"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
    "no_core_options_available"
    )
@@ -1797,6 +1875,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
    "no_netplay_hosts_found"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
+   "no_bt_devices_found"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
@@ -1851,6 +1933,10 @@ MSG_HASH(
    "onscreen_notifications_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "onscreen_notifications_views_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OPEN_ARCHIVE,
    "open_archive"
    )
@@ -1881,6 +1967,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SCALE,
    "input_overlay_scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_CENTER_X,
+   "input_overlay_center_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_CENTER_Y,
+   "input_overlay_center_y"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PAL60_ENABLE,
@@ -2667,6 +2761,10 @@ MSG_HASH(
    "menu_timedate_style"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,
+   "menu_timedate_date_separator"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_TICKER_TYPE,
    "menu_ticker_type"
    )
@@ -3019,6 +3117,22 @@ MSG_HASH(
    "video_shader_preset_save_as"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "video_shader_preset_save_global"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "video_shader_preset_save_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "video_shader_preset_save_parent"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "video_shader_preset_save_game"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
    "video_shader_scale_pass"
    )
@@ -3129,6 +3243,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_WIFI_SETTINGS,
    "wifi_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,
+   "bluetooth_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,
@@ -3455,6 +3573,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCROLL_FAST,
    "menu_scroll_fast"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_LOCK,
+   "core_lock"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_DELETE,
@@ -4191,6 +4313,46 @@ MSG_HASH(
    "menu_widgets_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "menu_show_load_content_animation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   "notification_show_autoconfig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "notification_show_cheats_applied"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   "notification_show_remap_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "notification_show_config_override_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "notification_show_set_initial_disk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "notification_show_fast_forward"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "notification_show_screenshot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "notification_show_screenshot_duration"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "notification_show_screenshot_flash"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
    "video_shader_enable"
    )
@@ -4221,6 +4383,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,
    "fps_update_interval"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL,
+   "memory_update_interval"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
@@ -4411,6 +4577,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
    "manual_content_scan_file_exts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "manual_content_scan_search_recursively"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,

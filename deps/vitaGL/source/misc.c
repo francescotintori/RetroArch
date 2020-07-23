@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * misc.c:
  * Implementation for miscellaneous functions
@@ -101,7 +119,7 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 	switch (face) {
@@ -122,7 +140,7 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		sceGxmSetBackPolygonMode(gxm_context, new_mode);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		return;
 	}
 	update_polygon_offset();
@@ -149,8 +167,7 @@ void glFrontFace(GLenum mode) {
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((width < 0) || (height < 0)) {
-		_vitagl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	x_scale = width >> 1;
@@ -162,28 +179,24 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 	gl_viewport.y = y;
 	gl_viewport.w = width;
 	gl_viewport.h = height;
-	viewport_mode = 1;
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	viewport_mode = 1;
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	viewport_mode = 1;
 }
 
 void glEnable(GLenum cap) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	switch (cap) {
@@ -235,7 +248,7 @@ void glEnable(GLenum cap) {
 		clip_plane0 = GL_TRUE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -243,8 +256,7 @@ void glEnable(GLenum cap) {
 void glDisable(GLenum cap) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	switch (cap) {
@@ -296,7 +308,7 @@ void glDisable(GLenum cap) {
 		clip_plane0 = GL_FALSE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -310,13 +322,14 @@ void glClear(GLbitfield mask) {
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
-		void *color_buffer;
+		void *color_buffer, *vertex_buffer;
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
 	}
@@ -325,14 +338,15 @@ void glClear(GLbitfield mask) {
 		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
-		void *depth_buffer;
+		void *depth_buffer, *vertex_buffer;
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &depth_buffer);
 		float temp = depth_value;
 		sceGxmSetUniformDataF(depth_buffer, clear_depth, 0, 1, &temp);
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 	}
 	if ((mask & GL_STENCIL_BUFFER_BIT) == GL_STENCIL_BUFFER_BIT) {
 		invalidate_depth_test();
@@ -351,14 +365,15 @@ void glClear(GLbitfield mask) {
 			SCE_GXM_STENCIL_OP_REPLACE,
 			SCE_GXM_STENCIL_OP_REPLACE,
 			0, stencil_value * 0xFF);
-		void *depth_buffer;
+		void *depth_buffer, *vertex_buffer;
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &depth_buffer);
 		float temp = 1.0f;
 		sceGxmSetUniformDataF(depth_buffer, clear_depth, 0, 1, &temp);
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_stencil_settings();
 	}
 }
@@ -393,7 +408,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			}
 			break;
 		default:
-			_vitagl_error = GL_INVALID_ENUM;
+			SET_GL_ERROR(GL_INVALID_ENUM)
 			break;
 		}
 		break;
@@ -411,12 +426,12 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			}
 			break;
 		default:
-			_vitagl_error = GL_INVALID_ENUM;
+			SET_GL_ERROR(GL_INVALID_ENUM)
 			break;
 		}
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -425,8 +440,7 @@ void glLineWidth(GLfloat width) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (width <= 0) {
-		_vitagl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -439,8 +453,7 @@ void glPointSize(GLfloat size) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (size <= 0) {
-		_vitagl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -465,7 +478,7 @@ void glFogf(GLenum pname, GLfloat param) {
 		fog_far = param;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -486,10 +499,10 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		fog_far = params[0];
 		break;
 	case GL_FOG_COLOR:
-		memcpy(&fog_color.r, params, sizeof(vector4f));
+		memcpy_neon(&fog_color.r, params, sizeof(vector4f));
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -510,7 +523,7 @@ void glFogi(GLenum pname, const GLint param) {
 		fog_far = param;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -527,10 +540,10 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 		matrix4x4_transpose(inverted_transposed, inverted);
 		vector4f temp;
 		vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_plane0_eq);
-		memcpy(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
+		memcpy_neon(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }

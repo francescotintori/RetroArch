@@ -16,20 +16,18 @@
 
 #include "../../include/wiiu/input.h"
 
-static bool hidpad_init(void *data);
-static bool hidpad_query_pad(unsigned pad);
-static void hidpad_destroy(void);
-static bool hidpad_button(unsigned pad, uint16_t button);
-static void hidpad_get_buttons(unsigned pad, input_bits_t *state);
-static int16_t hidpad_axis(unsigned pad, uint32_t axis);
-static void hidpad_poll(void);
-static const char *hidpad_name(unsigned pad);
-
+/* TODO/FIXME - static global variables */
 static bool hidpad_ready = false;
 
 static bool init_hid_driver(void)
 {
    return hid_init(&hid_instance, &wiiu_hid, &hidpad_driver, MAX_USERS);
+}
+
+static void hidpad_poll(void)
+{
+   if (hidpad_ready)
+      HID_POLL();
 }
 
 static bool hidpad_init(void *data)
@@ -48,9 +46,9 @@ static bool hidpad_init(void *data)
    return true;
 }
 
-static bool hidpad_query_pad(unsigned pad)
+static bool hidpad_query_pad(unsigned port)
 {
-   return hidpad_ready && pad < MAX_USERS;
+   return hidpad_ready && port < MAX_USERS;
 }
 
 static void hidpad_destroy(void)
@@ -60,42 +58,66 @@ static void hidpad_destroy(void)
    hid_deinit(&hid_instance);
 }
 
-static bool hidpad_button(unsigned pad, uint16_t button)
+static int16_t hidpad_button(unsigned port, uint16_t joykey)
 {
-   if (!hidpad_query_pad(pad))
-      return false;
-
-   return HID_BUTTON(pad, button);
+   if (!hidpad_query_pad(port))
+      return 0;
+   return (HID_BUTTON(port, joykey));
 }
 
-static void hidpad_get_buttons(unsigned pad, input_bits_t *state)
+static void hidpad_get_buttons(unsigned port, input_bits_t *state)
 {
-  if (!hidpad_query_pad(pad))
+  if (!hidpad_query_pad(port))
     BIT256_CLEAR_ALL_PTR(state);
 
-  HID_GET_BUTTONS(pad, state);
+  HID_GET_BUTTONS(port, state);
 }
 
-static int16_t hidpad_axis(unsigned pad, uint32_t axis)
+static int16_t hidpad_axis(unsigned port, uint32_t axis)
 {
-   if (!hidpad_query_pad(pad))
+   if (!hidpad_query_pad(port))
+      return 0;
+   return HID_AXIS(port, axis);
+}
+
+static int16_t hidpad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+
+   if (!hidpad_query_pad(port))
       return 0;
 
-   return HID_AXIS(pad, axis);
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN
+            && HID_BUTTON(port, (uint16_t)joykey)
+         )
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(HID_AXIS(port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
-static void hidpad_poll(void)
+static const char *hidpad_name(unsigned port)
 {
-   if (hidpad_ready)
-      HID_POLL();
-}
-
-static const char *hidpad_name(unsigned pad)
-{
-   if (!hidpad_query_pad(pad))
+   if (!hidpad_query_pad(port))
       return "N/A";
 
-   return HID_PAD_NAME(pad);
+   return HID_PAD_NAME(port);
 }
 
 input_device_driver_t hidpad_driver =
@@ -104,6 +126,7 @@ input_device_driver_t hidpad_driver =
   hidpad_query_pad,
   hidpad_destroy,
   hidpad_button,
+  hidpad_state,
   hidpad_get_buttons,
   hidpad_axis,
   hidpad_poll,

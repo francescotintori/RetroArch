@@ -1,11 +1,89 @@
 # Future
+- ANDROID/VIBRATION: Fixes "Vibrate on Key Press" having no effect on Android devices, which occurred because only the off time/strength was defined in what should have been a pair of off/on values
+- BLUETOOTH: Add a Bluetooth driver (Lakka-only for now)
+- CHEATS: Fix for wrong number of remaining cheat search matches on some machines
+- CHEEVOS: Option to play sound on achievement unlock.
+- CHEEVOS: Upgrade to rcheevos 9.1
+- CHEEVOS: Restore display of unlocked achievements across hardcore modes
+- CHEEVOS: Hash buffered data when available
+- CHEEVOS: Fix 'Auto Save State freezes RetroArch while Cheevos is enabled'
+- CLI: A new command line option --load-menu-on-error has been added
+- CONFIG FILE: Optimise parsing of configuration files
+- D3D9/D3D11: Fix core-initiated D3D9/D3D11 driver switches
+- DRIVERS: Implemented protection to avoid setting critical drivers to nothing thus preventing the user from locking him/herself out of the program
+- EMSCRIPTEN: Fix input code to ignore unknown keys
+- FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
+- IOS: Fixed iOS 6 version
+- IOS/METAL: Metal video driver now works on RetroArch iOS
+- LOCALIZATION: Updates for several languages (synchronized from Crowdin)
+- MEMORY/LINUX/ANDROID: Fix reporting of free memory
+- MEMORY/WINDOWS: Fix reporting of free memory
+- MENU: Enlarged INT/UINT selection limit from 999 to 9999
+- MENU: Fix cursor forced to first entry after displaying lists
+- MENU/WIDGETS: Add optional widget-based 'load content' launch feedback animation
+- ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
+- PS2: Improve FPS Limiter
+- SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
+- VIDEO FILTERS/BLARGG: Make Blargg_snes filter customizable
+- WINDOWS/RAWINPUT: Fix invalid calls to dinput_handle_message when input driver is not set to dinput
+- X11: Add lightgun support
+
+# 1.8.9
+- AUTO SAVESTATES: Ensure save states are correctly flushed to disk when quitting RetroArch (fixes broken save states when exiting RetroArch - without first closing content - with 'Auto Save State' enabled)
+- BUILTIN CORES: Builtin cores like ffmpeg and imageviewer would previously try  to erroneously load a dynamic core named 'builtin' - this would fail and would just be a wasteful operation - this now skips dylib loading in libretro_get_system_info for builtin cores
+- CHEEVOS: Report API errors when unlocking achievements or submitting leaderboards
+- CHEEVOS: Support less common file extensions
+- CHEEVOS: Disable hardcore mode when playing BSV file
+- CHEEVOS: Correctly report unlocked non-hardcore achievements when hardcore is paused
+- CHEEVOS/M3U: Bugfix - did not handle absolute/relative paths in M3U files correctly before
+- CHEEVOS/M3U: Bugfix - it didn't handle comments/directives
+- CHEEVOS/M3U: Bugfix - it doesn't handle trailing whitespace
+- CHEEVOS/M3U: Bugfix - failed when loading M3U files with certain line endings
+- CORE MANAGEMENT: Add 'core management' menu (Settings -> Core)
+- CORE MANAGEMENT: Add option to backup/restore installed cores
+- CORE MANAGEMENT: Improved core selection logic
+- CORE INFO: Search search optimisations
+- CORE DOWNLOADER: Rename 'Core Updater' to 'Core Downloader'
+- CORE DOWNLOADER: Add 'Show Experimental Cores' setting under Settings > Network > Updater
+- CORE DOWNLOADER: Core licenses are now shown for all entries in the Core Updater menu
+- CORE DOWNLOADER: Pressing RetroPad select on a Core Updater entry will now display any text in the description field of its info file
+- CORE DOWNLOADER: Installed cores are now highlighted via a [#] symbol
+- CORE DOWNLOADER: Pressing RetroPad start on a selected, installed entry opens the Core Information menu (when using Material UI, swiping left or right triggers the same action). This means we can now view bios info etc. - and more importantly delete cores - without jumping through all the hoops of loading a core first and navigating all over the place
+- CORE DOWNLOADER/UPDATER: Add option to automatically backup cores when updating
+- DISK CONTROL: Enable 'Load New Disc' while disk tray is open
+- INPUT: Added a hotkey delay option to allow hotkey input to work properly when it is assigned to another action
+- INPUT: Remove 'All Users Control Menu' setting, was buggy and will be properly reintroduced after input overhaul
+- LINUX: Set default saves/save states/system paths
+- LOCALIZATION: Add Persian language
+- LOCALIZATION: Add Hebrew language
+- LOCALIZATION: Add Asturian language
+- MENU: Proper line wrapping for message dialog boxes
+- MENU/HOTKEYS: Add sublabels to all hotkey bind entries
+- MENU/QUICK MENU: Suppress the display of 'empty' quick menu listings when closing content
+- MENU/OZONE: Performance improvements
+- MENU/SDL: Add mouse controls
+- OPENGL1/VITA: Initial changes for HW context without FBO
+- OVERLAYS: Add options for moving the on-screen overlay
+- PLAYLISTS/WINDOWS: Fix core path entries in image/video/music history playlists
+- PS2: Add back CDFS support
+- SDL/GL: Advertise GLSL support
+- VIDEO/WIDGETS: Fix heap-use-after-free errors, leading to memory corruption
+- VITA: Added custom bubbles support
+- VITA: VitaGL update
+- VULKAN/WSI: Better frame pacing
+- VULKAN/WSI: Fix Intel Mesa being broken when using Fences, we have to use Semaphores to acquire the swapchain or the entire GPU stalls
+- VULKAN/WSI: Add support for either using fences or semaphores when syncing
+- VULKAN/WSI: Prefer using semaphores for integrated GPUs as it promotes better throughput over fences
+- VULKAN/WSI/ANDROID: Do not use mailbox emulation on Android
+- UWP/XBOX: Potentially improve performance by enabling 'Game Mode'
 
 # 1.8.8
 - AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
 - CHEEVOS: Disable hardcore when cheats are enabled
 - CHD: Return false when special track cannot be found
 - DISCORD/MATCHMAKING: Fix Discord 'Ask To Join' functionality
-- FILE PATH: Various file path handling optimisations 
+- FILE PATH: Various file path handling optimisations
+- FONT: Fix Arabic, Chinese and Korean font rendering
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
 - INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
 - LOCALIZATION: Update Arabic translation
@@ -27,15 +105,18 @@
 - LOCALIZATION: Add Slovak translation
 - MENU: Small buffer optimizations
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
+- MENU/OZONE: Add option to sort playlists after name truncation
 - MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
 - MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
 - NETPLAY: Lower announcement rate
 - OVERLAYS: Fix memory leak when loading overlays
 - SHADER PRESETS: Improved shader preset dirs
+- TIME/DATE: Enable configuration of date seperator in clock and runtime 'last played' displays
 - VITA: Fix upside-down vertical games
 - UWP: Enable playlist and savefile compression by default (because of slow file I/O)
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
+- VIDEO/WIDGETS: Fix overlapping text when simultaneous pop-up notifications and core/shader messages are being displayed
 - X11: Fix crash in x11_display_server_get_screen_orientation
 - X11/XSHM: Allow X11/XHSM video driver to operate without SHM extension
 - X11/XSHM: Fix compatibility with X11 input driver

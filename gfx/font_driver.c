@@ -45,6 +45,7 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
+/* TODO/FIXME - global */
 static void *video_font_driver = NULL;
 
 int font_renderer_create_default(
@@ -72,7 +73,7 @@ int font_renderer_create_default(
          return 1;
       }
       else
-         RARCH_ERR("Failed to create rendering backend: %s.\n",
+         RARCH_ERR("[Font]: Failed to create rendering backend: %s.\n",
                font_backends[i]->ident);
    }
 
@@ -946,13 +947,12 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
    const unsigned char* src     = (const unsigned char*)msg;
    unsigned char*       dst;
    bool                 reverse = false;
+   size_t              msg_size = (strlen(msg) * 2) + 1;
 
    /* fallback to heap allocated buffer if the buffer is too small */
-   if (buffer_size < (strlen(msg) * 2) + 1)
-   {
-      /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
-      dst_buffer = (unsigned char*)malloc((strlen(msg) * 2) + 1);
-   }
+   /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
+   if (buffer_size < msg_size)
+      dst_buffer = (unsigned char*)malloc(msg_size);
 
    dst = (unsigned char*)dst_buffer;
 
@@ -1200,7 +1200,7 @@ font_data_t *font_driver_init_first(
 
    if (ok)
    {
-      font_data_t *font   = (font_data_t*)calloc(1, sizeof(*font));
+      font_data_t *font   = (font_data_t*)malloc(sizeof(*font));
       font->renderer      = (const font_renderer_t*)font_driver;
       font->renderer_data = font_handle;
       font->size          = font_size;
@@ -1226,7 +1226,7 @@ void font_driver_init_osd(
          video_info->font_size, threading_hint, is_threaded, api);
 
    if (!video_font_driver)
-      RARCH_ERR("[font]: Failed to initialize OSD font.\n");
+      RARCH_ERR("[Font]: Failed to initialize OSD font.\n");
 }
 
 void font_driver_free_osd(void)

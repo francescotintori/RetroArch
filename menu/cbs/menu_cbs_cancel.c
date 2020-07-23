@@ -20,9 +20,9 @@
 #include "../menu_cbs.h"
 #include "../../configuration.h"
 #include "../../msg_hash.h"
+#ifdef HAVE_CHEATS
 #include "../../managers/cheat_manager.h"
-
-#include "../widgets/menu_filebrowser.h"
+#endif
 
 #ifndef BIND_ACTION_CANCEL
 #define BIND_ACTION_CANCEL(cbs, name) (cbs)->action_cancel = (name)
@@ -68,12 +68,14 @@ int action_cancel_pop_default(const char *path,
    return 0;
 }
 
+#ifdef HAVE_CHEATS
 static int action_cancel_cheat_details(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    cheat_manager_copy_working_to_idx(cheat_manager_state.working_cheat.idx) ;
    return action_cancel_pop_default(path, label, type, idx) ;
 }
+#endif
 
 static int action_cancel_core_content(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -114,9 +116,9 @@ static int menu_cbs_init_bind_cancel_compare_type(
          return 0;
    }
 
+#ifdef HAVE_CHEATS
    switch (cbs->enum_idx)
    {
-
       case MENU_ENUM_LABEL_CHEAT_IDX:
       case MENU_ENUM_LABEL_CHEAT_STATE:
       case MENU_ENUM_LABEL_CHEAT_DESC:
@@ -142,15 +144,14 @@ static int menu_cbs_init_bind_cancel_compare_type(
       case MENU_ENUM_LABEL_CHEAT_COPY_AFTER:
       case MENU_ENUM_LABEL_CHEAT_COPY_BEFORE:
       case MENU_ENUM_LABEL_CHEAT_DELETE:
-      {
-         BIND_ACTION_CANCEL(cbs, action_cancel_cheat_details);
-         break ;
-      }
-      default :
-      {
-         break ;
-      }
+         {
+            BIND_ACTION_CANCEL(cbs, action_cancel_cheat_details);
+            break ;
+         }
+      default:
+         break;
    }
+#endif
    return -1;
 }
 

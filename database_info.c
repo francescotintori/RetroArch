@@ -217,30 +217,40 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          if (!string_is_empty(val_string))
             db_info->franchise = strdup(val_string);
       }
-      else if (string_is_equal(str, "bbfc_rating"))
+      else if (string_ends_with_size(str, "_rating",
+               strlen(str), STRLEN_CONST("_rating")))
       {
-         if (!string_is_empty(val_string))
-            db_info->bbfc_rating = strdup(val_string);
-      }
-      else if (string_is_equal(str, "esrb_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->esrb_rating = strdup(val_string);
-      }
-      else if (string_is_equal(str, "elspa_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->elspa_rating = strdup(val_string);
-      }
-      else if (string_is_equal(str, "cero_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->cero_rating          = strdup(val_string);
-      }
-      else if (string_is_equal(str, "pegi_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->pegi_rating          = strdup(val_string);
+         if (string_is_equal(str, "bbfc_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->bbfc_rating = strdup(val_string);
+         }
+         else if (string_is_equal(str, "esrb_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->esrb_rating = strdup(val_string);
+         }
+         else if (string_is_equal(str, "elspa_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->elspa_rating = strdup(val_string);
+         }
+         else if (string_is_equal(str, "cero_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->cero_rating          = strdup(val_string);
+         }
+         else if (string_is_equal(str, "pegi_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->pegi_rating          = strdup(val_string);
+         }
+         else if (string_is_equal(str, "edge_rating"))
+            db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
+         else if (string_is_equal(str, "famitsu_rating"))
+            db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
+         else if (string_is_equal(str, "tgdb_rating"))
+            db_info->tgdb_rating             = (unsigned)val->val.uint_;
       }
       else if (string_is_equal(str, "enhancement_hw"))
       {
@@ -252,14 +262,8 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          if (!string_is_empty(val_string))
             db_info->edge_magazine_review = strdup(val_string);
       }
-      else if (string_is_equal(str, "edge_rating"))
-         db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "edge_issue"))
          db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "famitsu_rating"))
-         db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "tgdb_rating"))
-         db_info->tgdb_rating             = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "users"))
          db_info->max_users               = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "releasemonth"))
@@ -361,7 +365,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    core_info_list_t *core_info_list = NULL;
    struct string_list       *list   = NULL;
    database_info_handle_t     *db   = (database_info_handle_t*)
-      calloc(1, sizeof(*db));
+      malloc(sizeof(*db));
 
    if (!db)
       return NULL;
@@ -380,10 +384,10 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    dir_list_prioritize(list);
 
-   db->list           = list;
-   db->list_ptr       = 0;
-   db->status         = DATABASE_STATUS_ITERATE;
-   db->type           = type;
+   db->status             = DATABASE_STATUS_ITERATE;
+   db->type               = type;
+   db->list_ptr           = 0;
+   db->list               = list;
 
    return db;
 }
@@ -394,7 +398,7 @@ database_info_handle_t *database_info_file_init(const char *path,
    union string_list_elem_attr attr;
    struct string_list        *list  = NULL;
    database_info_handle_t      *db  = (database_info_handle_t*)
-      calloc(1, sizeof(*db));
+      malloc(sizeof(*db));
 
    if (!db)
       return NULL;
@@ -411,10 +415,10 @@ database_info_handle_t *database_info_file_init(const char *path,
 
    string_list_append(list, path, attr);
 
-   db->list_ptr       = 0;
-   db->list           = list;
-   db->status         = DATABASE_STATUS_ITERATE;
-   db->type           = type;
+   db->status             = DATABASE_STATUS_ITERATE;
+   db->type               = type;
+   db->list_ptr           = 0;
+   db->list               = list;
 
    return db;
 }
@@ -495,6 +499,10 @@ database_info_list_t *database_info_list_new(
                free(db_info.rom_name);
             if (db_info.serial)
                free(db_info.serial);
+            if (db_info.md5)
+               free(db_info.md5);
+            if (db_info.sha1)
+               free(db_info.sha1);
             database_info_list_free(database_info_list);
             free(database_info);
             free(database_info_list);

@@ -66,9 +66,6 @@ struct screenshot_task_state
    bool is_idle;
    bool is_paused;
    bool history_list_enable;
-   bool pl_fuzzy_archive_match;
-   bool pl_use_old_format;
-   bool pl_compression;
    bool widgets_ready;
 
    int pitch;
@@ -180,10 +177,7 @@ static void task_screenshot_handler(retro_task_t *task)
       entry.core_path             = (char*)"builtin";
       entry.core_name             = (char*)"imageviewer";
 
-      command_playlist_push_write(g_defaults.image_history, &entry,
-            state->pl_fuzzy_archive_match,
-            state->pl_use_old_format,
-            state->pl_compression);
+      command_playlist_push_write(g_defaults.image_history, &entry);
    }
 #endif
 
@@ -243,7 +237,8 @@ static void task_screenshot_callback(retro_task_t *task,
       return;
 
    if (!state->silence && state->widgets_ready)
-      gfx_widget_screenshot_taken(state->shotname, state->filename);
+      gfx_widget_screenshot_taken(dispwidget_get_ptr(),
+            state->shotname, state->filename);
 
    free(state);
    /* Must explicitly set task->state to NULL here,
@@ -273,7 +268,8 @@ static bool screenshot_dump(
    struct retro_system_info system_info;
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
-   screenshot_task_state_t *state = (screenshot_task_state_t*)calloc(1, sizeof(*state));
+   screenshot_task_state_t *state = (screenshot_task_state_t*)
+      calloc(1, sizeof(*state));
 
    state->shotname[0]             = '\0';
 
@@ -282,9 +278,6 @@ static bool screenshot_dump(
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
 
-   state->pl_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   state->pl_use_old_format      = settings->bools.playlist_use_old_format;
-   state->pl_compression         = settings->bools.playlist_compression;
    state->is_idle                = is_idle;
    state->is_paused              = is_paused;
    state->bgr24                  = bgr24;
@@ -319,7 +312,10 @@ static bool screenshot_dump(
             if (path_is_empty(RARCH_PATH_CONTENT))
             {
                if (!core_get_system_info(&system_info))
+               {
+                  free(state);
                   return false;
+               }
 
                if (string_is_empty(system_info.library_name))
                   screenshot_name = "RetroArch";
@@ -383,7 +379,7 @@ static bool screenshot_dump(
       else
 #endif
       {
-         if (!savestate)
+         if (!savestate & settings->bools.notification_show_screenshot)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
       }
 

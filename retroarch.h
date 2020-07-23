@@ -31,6 +31,7 @@
 #include "config.h"
 #endif
 
+#include <lists/string_list.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
 #ifdef HAVE_AUDIOMIXER
@@ -88,6 +89,7 @@ enum rarch_ctl_state
    RARCH_CTL_IS_INITED,
 
    RARCH_CTL_IS_DUMMY_CORE,
+   RARCH_CTL_IS_CORE_LOADED,
 
    RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
@@ -224,6 +226,8 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+   bool launched_from_cli;
+   bool cli_load_menu_on_error;
    struct
    {
       char savefile[8192];
@@ -290,6 +294,27 @@ typedef struct global
 #endif
 } global_t;
 
+typedef struct content_state
+{
+   bool is_inited;
+   bool core_does_not_need_content;
+   bool pending_subsystem_init;
+   bool pending_rom_crc;
+
+   int pending_subsystem_rom_num;
+   int pending_subsystem_id;
+   unsigned pending_subsystem_rom_id;
+   uint32_t rom_crc;
+
+   char companion_ui_crc32[32];
+   char pending_subsystem_ident[255];
+   char pending_rom_crc_path[PATH_MAX_LENGTH];
+   char companion_ui_db_name[PATH_MAX_LENGTH];
+   char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
+
+   struct string_list *temporary_content;
+} content_state_t;
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
@@ -327,6 +352,12 @@ bool retroarch_main_init(int argc, char *argv[]);
 bool retroarch_main_quit(void);
 
 global_t *global_get_ptr(void);
+
+content_state_t *content_state_get_ptr(void);
+
+unsigned content_get_subsystem_rom_id(void);
+
+int content_get_subsystem(void);
 
 /**
  * runloop_iterate:
@@ -544,7 +575,7 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 
 const char *audio_driver_mixer_get_stream_name(unsigned i);
 
-void audio_driver_load_menu_sounds(void);
+void audio_driver_load_system_sounds(void);
 
 #endif
 
@@ -715,7 +746,6 @@ void recording_driver_update_streaming_url(void);
 
 #include "gfx/video_defines.h"
 #include "gfx/video_coord_array.h"
-#include "gfx/video_filter.h"
 
 #include "input/input_driver.h"
 #include "input/input_types.h"
@@ -770,13 +800,7 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D12_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
-   GFX_CTX_SIXEL_API,
-   GFX_CTX_NETWORK_VIDEO_API,
-   GFX_CTX_METAL_API,
-   GFX_CTX_GDI_API,
-   GFX_CTX_FPGA_API,
-   GFX_CTX_GX_API,
-   GFX_CTX_GX2_API
+   GFX_CTX_METAL_API
 };
 
 enum display_metric_types
@@ -1086,6 +1110,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   bool widgets_active;
    bool menu_mouse_enable;
    bool widgets_is_paused;
    bool widgets_is_fast_forwarding;
@@ -1098,6 +1123,7 @@ typedef struct video_frame_info
    bool memory_show;
    bool statistics_show;
    bool framecount_show;
+   bool core_status_msg_show;
    bool post_filter_record;
    bool windowed_fullscreen;
    bool fullscreen;
@@ -1166,10 +1192,6 @@ typedef struct video_frame_info
       enum text_alignment text_align;
    } osd_stat_params;
 
-   void (*cb_swap_buffers)(void*);
-   bool (*cb_set_resize)(void*, unsigned, unsigned);
-
-   void *context_data;
    void *userdata;
 } video_frame_info_t;
 
@@ -1535,12 +1557,6 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 
 void video_driver_cached_frame(void);
 
-void video_driver_default_settings(void);
-
-void video_driver_load_settings(config_file_t *conf);
-
-void video_driver_save_settings(config_file_t *conf);
-
 bool video_driver_is_hw_context(void);
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
@@ -1748,10 +1764,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(
       enum gfx_ctx_api api, unsigned major, unsigned minor,
       bool hw_render_ctx, void **ctx_data);
 
-bool video_context_driver_find_prev_driver(void);
-
-bool video_context_driver_find_next_driver(void);
-
 bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img);
 
 bool video_context_driver_get_video_output_prev(void);
@@ -1787,6 +1799,10 @@ void video_context_driver_free(void);
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
+
+#if defined(HAVE_GFX_WIDGETS)
+bool video_driver_has_widgets(void);
+#endif
 
 bool video_driver_started_fullscreen(void);
 
@@ -1870,14 +1886,18 @@ extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_uwp;
+extern const gfx_ctx_driver_t gfx_ctx_vk_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_x;
+extern const gfx_ctx_driver_t gfx_ctx_vk_x;
 extern const gfx_ctx_driver_t gfx_ctx_drm;
 extern const gfx_ctx_driver_t gfx_ctx_go2_drm;
 extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_android;
+extern const gfx_ctx_driver_t gfx_ctx_vk_android;
 extern const gfx_ctx_driver_t gfx_ctx_ps3;
+extern const gfx_ctx_driver_t gfx_ctx_w_vk;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
 extern const gfx_ctx_driver_t gfx_ctx_qnx;
@@ -1975,8 +1995,6 @@ const char* config_get_camera_driver_options(void);
 
 bool menu_driver_is_alive(void);
 
-void menu_driver_set_binding_state(bool on);
-
 bool gfx_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
@@ -1987,12 +2005,6 @@ bool is_input_keyboard_display_on(void);
 
 /* creates folder and core options stub file for subsequent runs */
 bool create_folder_and_core_options(void);
-
-/* Input overrides  */
-
-extern unsigned get_gamepad_input_override(void);
-extern void set_gamepad_input_override(unsigned i, bool val);
-extern void reset_gamepad_input_override(void);
 
 RETRO_END_DECLS
 
