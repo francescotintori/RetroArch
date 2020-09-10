@@ -138,7 +138,7 @@ static int action_right_cheat_num_passes(unsigned type, const char *label,
 
 #endif
 
-int action_right_input_desc_kbd(unsigned type, const char *label,
+static int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned key_id, user_idx, btn_idx;
@@ -171,7 +171,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 }
 
 /* TODO/FIXME: incomplete, lacks error checking */
-int action_right_input_desc(unsigned type, const char *label,
+static int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
    rarch_system_info_t *system           = runloop_get_system_info();
@@ -926,6 +926,10 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_RIGHT(cbs, action_right_core_lock);
             break;
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
+            BIND_ACTION_RIGHT(cbs, action_right_scroll);
+            break;
          default:
             return -1;
       }
@@ -990,6 +994,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
             case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
+            case MENU_ENUM_LABEL_EXPLORE_ITEM:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:

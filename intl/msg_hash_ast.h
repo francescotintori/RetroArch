@@ -41,6 +41,10 @@ MSG_HASH(
    "Xuegu en llinia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Esploración"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importación"
    )
@@ -62,6 +66,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Esbilla'l conteníu a aniciar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   "Llistes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -131,6 +139,10 @@ MSG_HASH(
    "Baxar un nucleu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   "Baxa ya instala nucleos dende l'anovador."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    "Instalar o restaurar un nucleu"
    )
@@ -151,6 +163,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
    "Favoritos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "Equí va apaecer el conteníu que s'amieste a «Favoritos»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -223,6 +239,14 @@ MSG_HASH(
 /* Main Menu > Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   "Información del sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   "Xestor de bases de datos"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
    "Xestor de cursores"
    )
@@ -282,6 +306,14 @@ MSG_HASH(
    "Ríquese"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "Bloquiar el nucléu instaláu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   "Desaniciar el nucleu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
    "Desanicia esti nucleu del discu."
    )
@@ -324,6 +356,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    "Fonte enerxética"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   "Anchor de la pantalla (mm)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   "Altor de la pantalla (mm)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   "DPI de la pantalla"
+   )
 
 /* Main Menu > Information > Database Manager */
 
@@ -363,6 +407,14 @@ MSG_HASH(
    "Clasificación de TGDB"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Mes de llanzamientu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Añu de llanzamientu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "Clasificación de BBFC"
    )
@@ -381,6 +433,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
    "Clasificación de CERO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   "Códigu de serie"
    )
 
 /* Main Menu > Configuration File */
@@ -483,6 +539,14 @@ MSG_HASH(
    "Rede"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "Llistes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   "Camuda los axustes de les llistes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
    "Usuariu"
    )
@@ -525,6 +589,10 @@ MSG_HASH(
    "Mou a pantalla completa"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Mou en ventana"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sincronización"
    )
@@ -546,9 +614,21 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Esbilla la pantalla a usar."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   "Orientación de la pantalla"
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Anchor a pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Altor a pantalla completa"
+   )
 
 /* Settings > Video > Windowed Mode */
 
@@ -619,18 +699,42 @@ MSG_HASH(
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   "Sincronización"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Ayuda a amenorgar les imperfeiciones na sincronización del audiu y videu. Ten curiáu si esta opción ta desactivada, la sincronización afayadiza ye imposible de consiguir."
    )
 
 /* Settings > Audio > MIDI */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   "Entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   "Esbilla'l preséu d'entrada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Salida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "Esbilla'l preséu de salida."
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
    "Va aniciar la reproducción del fluxu d'audiu. Namás acabar, esi fluxu va quitase de la memoria."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   "Parar"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -696,8 +800,20 @@ MSG_HASH(
 /* Settings > Input > Hotkey Binds */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Confirmación de la salida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Rique que l'atayu Colar se prima dos vegaes pa colar de RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    "Guarda un puntu de guardáu na ralura que s'esbillare anguaño."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Colar de RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -732,8 +848,16 @@ MSG_HASH(
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "Dalgunos nucleos tienen una carauterística d'apagáu, la carga d'un maniquín va evitar que RetroArch cole."
+   )
 #ifndef HAVE_DYNAMIC
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "Xestión de nucleos"
+   )
 
 /* Settings > Configuration */
 
@@ -856,6 +980,10 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Visibilidá d'elementos"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Aspeutu"
    )
@@ -881,7 +1009,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Permite que'l menú se controle con una pantalla táctil." 
+   "Permite que'l menú se controle con una pantalla táctil."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
@@ -963,6 +1091,10 @@ MSG_HASH(
    "Amuesa la llingüeta «Importación» dientro del menú principal."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Menú principal"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "Amosar la data y hora"
    )
@@ -1007,6 +1139,10 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+   "Imaxe del fondu"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Opacidá del fondu"
@@ -1103,6 +1239,14 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "Historial"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   "Comprimir les llistes"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Nucleu:"
@@ -1204,8 +1348,20 @@ MSG_HASH(
    "Les consultes guardaes atróxense nesti direutoriu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
+   "Ficheru de trampes"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
    "Les grabaciones van volquiase nesti direutoriu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Llistes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+   "Toles llistes guárdense nesti direutoriu."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
@@ -1266,6 +1422,20 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
    "Escania'l conteníu esbilláu."
+   )
+
+/* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "Rexón"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "Peñera adicional"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
+   "%u elementos"
    )
 
 /* Playlist > Playlist Item */
@@ -1376,20 +1546,24 @@ MSG_HASH(
    "Descripción"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
+   "Triba"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
+   "Valor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
    "Númberu de repiticiones"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
-   "Duración del vibrador primariu (ms)"
+   MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+   "Códigu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "Fuercia del vibrador secundariu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
-   "Duración del vibrador secundariu (ms)"
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
+   "Desaniciar esta trampa"
    )
 
 /* Quick Menu > Disc Control */
@@ -1444,7 +1618,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-   "Nun haí vídeos disponibles"
+   "Nun hai vídeos disponibles"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
@@ -1480,6 +1654,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "Historial y favoritos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+   "Toles llistes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
@@ -1882,8 +2060,28 @@ MSG_HASH(
    "&Cargar un nucleu…"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+   "&Colar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
+   "&Editar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+   "&Guetar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+   "&Ver"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
    "&Axustes…"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+   "Estilu:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
@@ -1966,6 +2164,10 @@ MSG_HASH(
    "El ficheru ta baleru."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+   "El ficheru nun esiste."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
    "N'iconos"
    )
@@ -1994,6 +2196,10 @@ MSG_HASH(
    "Nun pudo renomase'l ficheru."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
+   "Diendo en cata de la llista de ficheros..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
    "Nome:"
    )
@@ -2016,6 +2222,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    "(úsase p'alcontrar miniatures)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   "¿De xuru que quies desaniciar l'elementu «%1»?"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
@@ -2046,8 +2256,24 @@ MSG_HASH(
    "Asolombrador actual"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD,
+   "Cargar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SAVE,
+   "Guardar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_APPLY,
+   "Aplicar"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    "Yá hai una descarga en cursu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
+   "Miniatura"
    )
 
 /* Unsorted */

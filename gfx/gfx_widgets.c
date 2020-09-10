@@ -118,11 +118,6 @@ gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data)
    return &p_dispwidget->gfx_widget_fonts.msg_queue;
 }
 
-float* gfx_widgets_get_pure_white(void)
-{
-   return gfx_widgets_pure_white;
-}
-
 float* gfx_widgets_get_backdrop_orig(void)
 {
    return gfx_widgets_backdrop_orig;
@@ -140,6 +135,12 @@ unsigned gfx_widgets_get_padding(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->simple_widget_padding;
+}
+
+unsigned gfx_widgets_get_divider_width(void *data)
+{
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
+   return p_dispwidget->divider_width_1px;
 }
 
 unsigned gfx_widgets_get_height(void *data)
@@ -637,7 +638,7 @@ void gfx_widgets_draw_icon(
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id     = 0;
+   draw.pipeline_id     = 0;
 
    gfx_display_draw(&draw, userdata,
          video_width, video_height);
@@ -688,7 +689,7 @@ static void gfx_widgets_draw_icon_blend(
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id     = 0;
+   draw.pipeline_id     = 0;
 
    gfx_display_draw_blend(&draw, userdata,
          video_width, video_height);
@@ -805,10 +806,14 @@ void gfx_widgets_iterate(
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   float scale_factor               = (
-         gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
-      ? gfx_display_get_widget_pixel_scale(width, height, fullscreen) 
-      : gfx_display_get_widget_dpi_scale(width, height, fullscreen);
+   float scale_factor               = 0.0f;
+#ifdef HAVE_XMB
+   if (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB)
+      scale_factor                  = gfx_display_get_widget_pixel_scale(width, height, fullscreen);
+   else
+#endif
+      scale_factor                  = gfx_display_get_widget_dpi_scale(
+            width, height, fullscreen);
 
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
        (width        != p_dispwidget->last_video_width) ||
@@ -855,9 +860,7 @@ void gfx_widgets_iterate(
          {
             /* Task messages always appear from the bottom of the screen, append it */
             if (p_dispwidget->msg_queue_tasks_count == 0 || msg_widget->task_ptr)
-            {
                p_dispwidget->current_msgs[p_dispwidget->current_msgs_size] = msg_widget;
-            }
             /* Regular messages are always above tasks, make room and insert it */
             else
             {
@@ -1866,13 +1869,16 @@ static void gfx_widgets_context_reset(
    }
 
    /* Update scaling/dimensions */
-   p_dispwidget->last_video_width  = width;
-   p_dispwidget->last_video_height = height;
-   p_dispwidget->last_scale_factor = (
-         gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
-         gfx_display_get_widget_pixel_scale(p_dispwidget->last_video_width,
-               p_dispwidget->last_video_height, fullscreen) :
-               gfx_display_get_widget_dpi_scale(
+   p_dispwidget->last_video_width     = width;
+   p_dispwidget->last_video_height    = height;
+#ifdef HAVE_XMB
+   if (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB)
+      p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
+            p_dispwidget->last_video_width,
+            p_dispwidget->last_video_height, fullscreen);
+   else
+#endif
+      p_dispwidget->last_scale_factor = gfx_display_get_widget_dpi_scale(
                      p_dispwidget->last_video_width,
                      p_dispwidget->last_video_height,
                      fullscreen);

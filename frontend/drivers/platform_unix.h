@@ -166,11 +166,21 @@ struct android_app
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
 
+   jmethodID isPlayStoreBuild;
+   jmethodID getAvailableCores;
+   jmethodID getInstalledCores;
+   jmethodID downloadCore;
+   jmethodID deleteCore;
+
    struct
    {
       unsigned width, height;
       bool changed;
    } content_rect;
+   uint16_t rumble_last_strength_strong[MAX_USERS];
+   uint16_t rumble_last_strength_weak[MAX_USERS];
+   uint16_t rumble_last_strength[MAX_USERS];
+   int id[MAX_USERS];
 };
 
 enum

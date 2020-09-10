@@ -188,7 +188,8 @@ static void *metal_init(
 static bool metal_frame(void *data, const void *frame,
                         unsigned frame_width, unsigned frame_height,
                         uint64_t frame_count,
-                        unsigned pitch, const char *msg, video_frame_info_t *video_info)
+                        unsigned pitch, const char *msg,
+                        video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    return [md renderFrame:frame
@@ -208,24 +209,12 @@ static void metal_set_nonblock_state(void *data, bool non_block,
    md.context.displaySyncEnabled = !non_block;
 }
 
-static bool metal_alive(void *data)
-{
-   return true;
-}
-
-static bool metal_has_windowed(void *data)
-{
-   return true;
-}
-
-static bool metal_focus(void *data)
-{
-   return apple_platform.hasFocus;
-}
+static bool metal_alive(void *data) { return true; }
+static bool metal_has_windowed(void *data) { return true; }
+static bool metal_focus(void *data) { return apple_platform.hasFocus; }
 
 static bool metal_suppress_screensaver(void *data, bool disable)
 {
-   RARCH_LOG("[Metal]: suppress screen saver: %s\n", disable ? "YES" : "NO");
    return [apple_platform setDisableDisplaySleep:disable];
 }
 
@@ -307,7 +296,8 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
    return (uintptr_t)(__bridge_retained void *)(t);
 }
 
-static void metal_unload_texture(void *data, uintptr_t handle)
+static void metal_unload_texture(void *data, 
+      bool threaded, uintptr_t handle)
 {
    if (!handle)
       return;

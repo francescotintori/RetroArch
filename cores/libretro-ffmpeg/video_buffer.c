@@ -19,14 +19,14 @@ enum kbStatus
 
 struct video_buffer
 {
+   int64_t head;
+   int64_t tail;
    video_decoder_context_t *buffer;
    enum kbStatus *status;
-   size_t capacity;
    slock_t *lock;
    scond_t *open_cond;
    scond_t *finished_cond;
-   int64_t head;
-   int64_t tail;
+   size_t capacity;
 };
 
 video_buffer_t *video_buffer_create(
@@ -73,11 +73,8 @@ video_buffer_t *video_buffer_create(
       b->buffer[i].hw_source = av_frame_alloc();
 #endif
       b->buffer[i].target    = av_frame_alloc();
-      b->buffer[i].frame_buf = (uint8_t*)av_malloc(frame_size);
 
-      avpicture_fill((AVPicture*)
-            b->buffer[i].target,
-            (const uint8_t*)b->buffer[i].frame_buf,
+      avpicture_alloc((AVPicture*)b->buffer[i].target,
             PIX_FMT_RGB32, width, height);
 
       if (!b->buffer[i].sws       ||
@@ -85,8 +82,7 @@ video_buffer_t *video_buffer_create(
 #if LIBAVUTIL_VERSION_MAJOR > 55
           !b->buffer[i].hw_source ||
 #endif
-          !b->buffer[i].target    ||
-          !b->buffer[i].frame_buf)
+          !b->buffer[i].target)
          goto fail;
    }
    return b;
@@ -114,8 +110,8 @@ void video_buffer_destroy(video_buffer_t *video_buffer)
          av_frame_free(&video_buffer->buffer[i].hw_source);
 #endif
          av_frame_free(&video_buffer->buffer[i].source);
+         avpicture_free((AVPicture*)video_buffer->buffer[i].target);
          av_frame_free(&video_buffer->buffer[i].target);
-         av_freep(&video_buffer->buffer[i].frame_buf);
          sws_freeContext(video_buffer->buffer[i].sws);
       }
    }

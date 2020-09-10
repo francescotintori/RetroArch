@@ -38,14 +38,13 @@
 
 typedef struct
 {
-   unsigned port;
-   input_device_info_t device_info;
-   bool autoconfig_enabled;
-   bool suppress_notifcations;
-   char *driver;
    char *dir_autoconfig;
    char *dir_driver_autoconfig;
    config_file_t *autoconfig_file;
+   unsigned port;
+   input_device_info_t device_info; /* unsigned alignment */
+   bool autoconfig_enabled;
+   bool suppress_notifcations;
 } autoconfig_handle_t;
 
 /*********************/
@@ -56,12 +55,6 @@ static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
    if (!autoconfig_handle)
       return;
-
-   if (autoconfig_handle->driver)
-   {
-      free(autoconfig_handle->driver);
-      autoconfig_handle->driver = NULL;
-   }
 
    if (autoconfig_handle->dir_autoconfig)
    {
@@ -117,17 +110,10 @@ static unsigned input_autoconfigure_get_config_file_affinity(
    uint16_t config_pid = 0;
    bool pid_match      = false;
    unsigned affinity   = 0;
-   char config_device_name[256];
-
-   config_device_name[0] = '\0';
-
-   if (!autoconfig_handle || !config)
-      return 0;
+   struct config_entry_list 
+      *entry           = NULL;
 
    /* Parse config file */
-   config_get_array(config, "input_device", config_device_name,
-         sizeof(config_device_name));
-
    if (config_get_int(config, "input_vendor_id", &tmp_int))
       config_vid = (uint16_t)tmp_int;
 
@@ -143,7 +129,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
    /* Check for matching VID+PID */
    pid_match = (autoconfig_handle->device_info.vid == config_vid) &&
                (autoconfig_handle->device_info.pid == config_pid) &&
-               (autoconfig_handle->device_info.vid != 0) &&
+               (autoconfig_handle->device_info.vid != 0)          &&
                (autoconfig_handle->device_info.pid != 0);
 
    /* > More Bliss-Box shenanigans... */
@@ -157,9 +143,10 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       affinity += 3;
 
    /* Check for matching device name */
-   if (!string_is_empty(config_device_name) &&
-       string_is_equal(config_device_name,
-            autoconfig_handle->device_info.name))
+   if (      (entry  = config_get_entry(config, "input_device"))
+         && !string_is_empty(entry->value)
+         &&  string_is_equal(entry->value,
+             autoconfig_handle->device_info.name))
       affinity += 2;
 
    return affinity;
@@ -171,12 +158,7 @@ static void input_autoconfigure_set_config_file(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
 {
-   char device_display_name[256];
-
-   device_display_name[0] = '\0';
-
-   if (!autoconfig_handle || !config)
-      return;
+   struct config_entry_list *entry    = NULL;
 
    /* Attach config file */
    autoconfig_handle->autoconfig_file = config;
@@ -197,12 +179,10 @@ static void input_autoconfigure_set_config_file(
    }
 
    /* Read device display name */
-   config_get_array(config, "input_device_display_name",
-         device_display_name, sizeof(device_display_name));
-
-   if (!string_is_empty(device_display_name))
+   if (  (entry = config_get_entry(config, "input_device_display_name"))
+         && !string_is_empty(entry->value))
       strlcpy(autoconfig_handle->device_info.display_name,
-            device_display_name,
+            entry->value,
             sizeof(autoconfig_handle->device_info.display_name));
 
    /* Set auto-configured status to 'true' */
@@ -216,13 +196,13 @@ static void input_autoconfigure_set_config_file(
 static bool input_autoconfigure_scan_config_files_external(
       autoconfig_handle_t *autoconfig_handle)
 {
+   size_t i;
    const char *dir_autoconfig           = autoconfig_handle->dir_autoconfig;
    const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
    struct string_list *config_file_list = NULL;
    config_file_t *best_config           = NULL;
    unsigned max_affinity                = 0;
    bool match_found                     = false;
-   size_t i;
 
    /* Attempt to fetch file listing from driver-specific
     * autoconfig directory */
@@ -269,8 +249,9 @@ static bool input_autoconfigure_scan_config_files_external(
          continue;
 
       /* Check for a match */
-      affinity = input_autoconfigure_get_config_file_affinity(
-            autoconfig_handle, config);
+      if (autoconfig_handle && config)
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
 
       if (affinity > max_affinity)
       {
@@ -302,8 +283,9 @@ static bool input_autoconfigure_scan_config_files_external(
     * been cached, then we have a match */
    if (best_config)
    {
-      input_autoconfigure_set_config_file(
-            autoconfig_handle, best_config);
+      if (autoconfig_handle && best_config)
+         input_autoconfigure_set_config_file(
+               autoconfig_handle, best_config);
       match_found = true;
    }
 
@@ -347,15 +329,17 @@ static bool input_autoconfigure_scan_config_files_internal(
       autoconfig_str = NULL;
 
       /* Check for a match */
-      affinity = input_autoconfigure_get_config_file_affinity(
-            autoconfig_handle, config);
+      if (autoconfig_handle && config)
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
 
       /* > In the case of internal autoconfigs, any kind
        *   of match is considered to be a success */
       if (affinity > 0)
       {
-         input_autoconfigure_set_config_file(
-               autoconfig_handle, config);
+         if (autoconfig_handle && config)
+            input_autoconfigure_set_config_file(
+                  autoconfig_handle, config);
          return true;
       }
 
@@ -414,6 +398,13 @@ static void cb_input_autoconfigure_connect(
             autoconfig_handle->device_info.name);
    else
       input_config_clear_device_display_name(port);
+
+   /* > Driver */
+   if (!string_is_empty(autoconfig_handle->device_info.joypad_driver))
+      input_config_set_device_joypad_driver(port,
+            autoconfig_handle->device_info.joypad_driver);
+   else
+      input_config_clear_device_joypad_driver(port);
 
    /* > VID/PID */
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
@@ -493,11 +484,14 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
       /* Preset fallback device names - must match
        * those set in 'input_autodetect_builtin.c' */
-      if (string_is_equal(autoconfig_handle->driver, "android"))
+      if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "android"))
          fallback_device_name = "Android Gamepad";
-      else if (string_is_equal(autoconfig_handle->driver, "xinput"))
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "xinput"))
          fallback_device_name = "XInput Controller";
-      else if (string_is_equal(autoconfig_handle->driver, "sdl2"))
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "sdl2"))
          fallback_device_name = "Standard Gamepad";
 
       if (!string_is_empty(fallback_device_name) &&
@@ -604,6 +598,7 @@ void input_autoconfigure_connect(
 {
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
+   bool driver_valid                      = false;
    settings_t *settings                   = config_get_ptr();
    bool autoconfig_enabled                = settings ?
          settings->bools.input_autodetect_enable : false;
@@ -630,21 +625,21 @@ void input_autoconfigure_connect(
    if (!autoconfig_handle)
       goto error;
 
-   autoconfig_handle->port                        = port;
-   autoconfig_handle->device_info.vid             = vid;
-   autoconfig_handle->device_info.pid             = pid;
-   autoconfig_handle->device_info.name[0]         = '\0';
-   autoconfig_handle->device_info.display_name[0] = '\0';
-   autoconfig_handle->device_info.config_path[0]  = '\0';
-   autoconfig_handle->device_info.config_name[0]  = '\0';
-   autoconfig_handle->device_info.autoconfigured  = false;
-   autoconfig_handle->device_info.name_index      = 0;
-   autoconfig_handle->autoconfig_enabled          = autoconfig_enabled;
-   autoconfig_handle->suppress_notifcations       = !notification_show_autoconfig;
-   autoconfig_handle->driver                      = NULL;
-   autoconfig_handle->dir_autoconfig              = NULL;
-   autoconfig_handle->dir_driver_autoconfig       = NULL;
-   autoconfig_handle->autoconfig_file             = NULL;
+   autoconfig_handle->port                         = port;
+   autoconfig_handle->device_info.vid              = vid;
+   autoconfig_handle->device_info.pid              = pid;
+   autoconfig_handle->device_info.name[0]          = '\0';
+   autoconfig_handle->device_info.display_name[0]  = '\0';
+   autoconfig_handle->device_info.config_path[0]   = '\0';
+   autoconfig_handle->device_info.config_name[0]   = '\0';
+   autoconfig_handle->device_info.joypad_driver[0] = '\0';
+   autoconfig_handle->device_info.autoconfigured   = false;
+   autoconfig_handle->device_info.name_index       = 0;
+   autoconfig_handle->autoconfig_enabled           = autoconfig_enabled;
+   autoconfig_handle->suppress_notifcations        = !notification_show_autoconfig;
+   autoconfig_handle->dir_autoconfig               = NULL;
+   autoconfig_handle->dir_driver_autoconfig        = NULL;
+   autoconfig_handle->autoconfig_file              = NULL;
 
    if (!string_is_empty(name))
       strlcpy(autoconfig_handle->device_info.name, name,
@@ -654,8 +649,10 @@ void input_autoconfigure_connect(
       strlcpy(autoconfig_handle->device_info.display_name, display_name,
             sizeof(autoconfig_handle->device_info.display_name));
 
-   if (!string_is_empty(driver))
-      autoconfig_handle->driver = strdup(driver);
+   driver_valid = !string_is_empty(driver);
+   if (driver_valid)
+      strlcpy(autoconfig_handle->device_info.joypad_driver,
+            driver, sizeof(autoconfig_handle->device_info.joypad_driver));
 
    /* > Have to cache both the base autoconfig directory
     *   and the driver-specific autoconfig directory
@@ -668,16 +665,14 @@ void input_autoconfigure_connect(
    {
       autoconfig_handle->dir_autoconfig = strdup(dir_autoconfig);
 
-      /* 'autoconfig_handle->driver' will only be
-       * non-NULL if 'driver' is a non-empty string */
-      if (autoconfig_handle->driver)
+      if (driver_valid)
       {
          char dir_driver_autoconfig[PATH_MAX_LENGTH];
          dir_driver_autoconfig[0] = '\0';
 
          /* Generate driver-specific autoconfig directory */
-         fill_pathname_join(dir_driver_autoconfig,
-               dir_autoconfig, autoconfig_handle->driver,
+         fill_pathname_join(dir_driver_autoconfig, dir_autoconfig,
+               autoconfig_handle->device_info.joypad_driver,
                sizeof(dir_driver_autoconfig));
 
          if (!string_is_empty(dir_driver_autoconfig))
@@ -746,8 +741,6 @@ error:
 
    free_autoconfig_handle(autoconfig_handle);
    autoconfig_handle = NULL;
-
-   return;
 }
 
 /****************************/
@@ -758,8 +751,8 @@ static void cb_input_autoconfigure_disconnect(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   autoconfig_handle_t *autoconfig_handle = NULL;
    unsigned port;
+   autoconfig_handle_t *autoconfig_handle = NULL;
 
    if (!task)
       return;
@@ -778,6 +771,7 @@ static void cb_input_autoconfigure_disconnect(
    input_config_clear_device_display_name(port);
    input_config_clear_device_config_path(port);
    input_config_clear_device_config_name(port);
+   input_config_clear_device_joypad_driver(port);
    input_config_set_device_vid(port, 0);
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);

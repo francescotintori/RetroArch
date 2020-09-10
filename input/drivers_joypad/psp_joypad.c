@@ -35,6 +35,8 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/ctrl.h>
 #include <psp2/touch.h>
+
+/* TODO/FIXME - static globals */
 static int psp2_model;
 static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
 static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
@@ -53,9 +55,11 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 #define SE_AREA(x, y) AREA(SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, (x), (y))
 #endif
 
+/* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 
+/* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
 
 static const char *psp_joypad_name(unsigned pad)
@@ -184,8 +188,9 @@ static int16_t psp_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -197,11 +202,11 @@ static int16_t psp_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && (pad_state[port] & (UINT64_C(1) << (uint16_t)joykey))
+            && (pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey))
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(psp_joypad_axis_state(port, joyaxis)) 
+            ((float)abs(psp_joypad_axis_state(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

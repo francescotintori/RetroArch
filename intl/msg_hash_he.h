@@ -48,10 +48,6 @@ MSG_HASH(
    "טעינת תוכן"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "סריקת תוכן"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "הצג תפריט שולחן עבודה"
    )
@@ -608,6 +604,8 @@ MSG_HASH(
 /* Import content > Manual Scan */
 
 
+/* Explore tab */
+
 /* Playlist > Playlist Item */
 
 
@@ -673,10 +671,6 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
-   "Hebrew - עברית"
-   )
 
 /* RGUI: Settings > User Interface > Appearance */
 

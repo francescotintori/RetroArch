@@ -21,6 +21,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
+/* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 static uint64_t pads_connected[DEFAULT_MAX_PADS];
@@ -131,8 +132,9 @@ static int16_t ps3_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -144,11 +146,11 @@ static int16_t ps3_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && pad_state[port] & (UINT64_C(1) << (uint16_t)joykey)
+            && pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ps3_joypad_axis_state(port, joyaxis)) 
+            ((float)abs(ps3_joypad_axis_state(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

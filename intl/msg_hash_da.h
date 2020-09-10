@@ -236,6 +236,8 @@
 /* Import content > Manual Scan */
 
 
+/* Explore tab */
+
 /* Playlist > Playlist Item */
 
 

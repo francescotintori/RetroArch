@@ -103,7 +103,6 @@ static void fpga_gfx_create(fpga_t *fpga)
 static void *fpga_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   const gfx_ctx_driver_t *ctx_driver   = NULL;
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    *input                               = NULL;
@@ -142,7 +141,9 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    fpga_t *fpga              = (fpga_t*)data;
    unsigned bits             = fpga->video_bits;
+#ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+#endif
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -163,7 +164,8 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (fpga->menu_frame && video_info->menu_is_alive)
+#ifdef HAVE_MENU
+   if (fpga->menu_frame && menu_is_alive)
    {
       frame_to_copy = fpga->menu_frame;
       width         = fpga->menu_width;
@@ -172,6 +174,7 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       bits          = fpga->menu_bits;
    }
    else
+#endif
    {
       width         = fpga->video_width;
       height        = fpga->video_height;
@@ -180,8 +183,10 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
 
-      if (video_info->menu_is_alive)
+#ifdef HAVE_MENU
+      if (menu_is_alive)
          draw = false;
+#endif
    }
 
    if (draw)
@@ -251,24 +256,9 @@ static bool fpga_gfx_alive(void *data)
    return true;
 }
 
-static bool fpga_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool fpga_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool fpga_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool fpga_gfx_focus(void *data) { return true; }
+static bool fpga_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool fpga_gfx_has_windowed(void *data) { return true; }
 
 static void fpga_gfx_free(void *data)
 {

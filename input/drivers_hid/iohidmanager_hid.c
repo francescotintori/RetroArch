@@ -224,6 +224,7 @@ static int16_t iohidmanager_hid_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -234,11 +235,10 @@ static int16_t iohidmanager_hid_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && iohidmanager_hid_joypad_button(data,
-               port, (uint16_t)joykey))
+            && iohidmanager_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(iohidmanager_hid_joypad_axis(data, port, joyaxis)) 
+            ((float)abs(iohidmanager_hid_joypad_axis(data, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -582,7 +582,7 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
    input_autoconfigure_connect(
          device_name,
          NULL,
-         driver_name,
+         "hid",
          idx,
          dev_vid,
          dev_pid
@@ -684,6 +684,9 @@ static void iohidmanager_hid_device_add_device(
    if (adapter->slot == -1)
       goto error;
 
+   if (string_is_empty(adapter->name))
+      strcpy(adapter->name, "Unknown Controller With No Name");
+   
    if (pad_connection_has_interface(hid->slots, adapter->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
             adapter->data + 1, sizeof(adapter->data) - 1,
@@ -691,9 +694,6 @@ static void iohidmanager_hid_device_add_device(
    else
       IOHIDDeviceRegisterInputValueCallback(device,
             iohidmanager_hid_device_input_callback, adapter);
-
-   if (string_is_empty(adapter->name))
-      goto error;
 
    /* scan for buttons, axis, hats */
    elements_raw = IOHIDDeviceCopyMatchingElements(device, NULL, kIOHIDOptionsTypeNone);

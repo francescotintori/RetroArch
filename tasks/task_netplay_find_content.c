@@ -41,18 +41,18 @@
 
 typedef struct
 {
-   char content_crc[PATH_MAX_LENGTH];
-   char content_path[PATH_MAX_LENGTH];
+   struct string_list *lpl_list;
+   playlist_config_t playlist_config; /* size_t alignment */
    char hostname[512];
    char subsystem_name[512];
+   char content_crc[PATH_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char core_extensions[PATH_MAX_LENGTH];
    bool found;
    bool current;
    bool contentless;
-   struct string_list *lpl_list;
-   playlist_config_t playlist_config;
 } netplay_crc_handle_t;
 
 static void netplay_crc_scan_callback(retro_task_t *task,
@@ -437,6 +437,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    state->playlist_config.old_format          = settings->bools.playlist_use_old_format;
    state->playlist_config.compress            = settings->bools.playlist_compression;
    state->playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&state->playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
    state->content_crc[0]    = '\0';
    state->content_path[0]   = '\0';

@@ -158,15 +158,28 @@ ifeq ($(TARGET), retroarch_3ds)
 endif
 
 # Git Version
+GIT_VERSION_CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
+GIT_VERSION_CACHEFILE = $(GIT_VERSION_CACHEDIR)/git-version.cache
 
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
-ifneq ($(GIT_VERSION),)
-   _CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
-   _LAST_GIT_VERSION := $(shell cat "$(_CACHEDIR)"/last-git-version 2>/dev/null)
-   ifneq ($(GIT_VERSION),$(_LAST_GIT_VERSION))
+ifneq (,$(wildcard .git/index))  # Building inside a Git repository?
+   GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+endif
+
+ifneq (,$(wildcard $(GIT_VERSION_CACHEFILE)))  # Cached Git version?
+   GIT_VERSION_CACHE = $(shell cat "$(GIT_VERSION_CACHEFILE)" 2>/dev/null)
+endif
+
+ifeq ($(GIT_VERSION),)
+   ifneq ($(GIT_VERSION_CACHE),)  # If no Git version, use cached if found
+      GIT_VERSION = $(GIT_VERSION_CACHE)
+   endif
+endif
+
+ifneq ($(GIT_VERSION),)  # Enable version_git.o?
+   ifneq ($(GIT_VERSION),$(GIT_VERSION_CACHE))  # Update version_git.o?
       $(shell \
-         mkdir -p "$(_CACHEDIR)"; \
-         echo "$(GIT_VERSION)" > "$(_CACHEDIR)"/last-git-version; \
+         mkdir -p "$(GIT_VERSION_CACHEDIR)" && \
+         echo "$(GIT_VERSION)" > "$(GIT_VERSION_CACHEFILE)" && \
          touch version_git.c)
    endif
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
@@ -243,7 +256,6 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
        $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
-       file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
@@ -518,6 +530,10 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           database_info.o \
           tasks/task_database.o \
           tasks/task_database_cue.o
+
+   ifeq ($(HAVE_MENU), 1)
+      OBJ += menu/menu_explore.o
+   endif
 endif
 
 ifeq ($(HAVE_BUILTINMBEDTLS), 1)
@@ -528,7 +544,8 @@ ifeq ($(HAVE_BUILTINMBEDTLS), 1)
       DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
    endif
 
-   # MinGW requires this for some reason, even though the include paths are relative to the source
+   # MinGW requires this for some reason, 
+	# even though the include paths are relative to the source
    INCLUDE_DIRS += -Ideps/mbedtls
 
    OBJS_TLS_CRYPTO = deps/mbedtls/aes.o \
@@ -668,7 +685,8 @@ endif
 
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += audio/drivers/ctr_csnd_audio.o \
-          audio/drivers/ctr_dsp_audio.o
+          audio/drivers/ctr_dsp_audio.o \
+          audio/drivers/ctr_dsp_thread_audio.o
 endif
 
 ifeq ($(HAVE_ALSA), 1)
@@ -1088,13 +1106,17 @@ ifeq ($(HAVE_DINPUT), 1)
    HAVE_DX_COMMON  = 1
    LIBS += -ldinput8 -lole32
    DEFINES += -DHAVE_DINPUT
-   OBJ += input/drivers/dinput.o \
-          input/drivers_joypad/dinput_joypad.o
+   OBJ += input/drivers/dinput.o
+   OBJ += input/drivers_joypad/dinput_joypad.o
 endif
 
 ifeq ($(HAVE_XINPUT), 1)
    DEFINES += -DHAVE_XINPUT
-   OBJ += input/drivers_joypad/xinput_joypad.o
+   ifeq ($(HAVE_DINPUT), 1)
+      OBJ += input/drivers_joypad/xinput_hybrid_joypad.o
+   else
+      OBJ += input/drivers_joypad/xinput_joypad.o
+   endif
 endif
 
 ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)
@@ -1169,6 +1191,7 @@ ifeq ($(HAVE_HID), 1)
           input/connect/connect_psxadapter.o \
           input/connect/connect_ps3.o \
           input/connect/connect_ps4.o \
+          input/connect/connect_ps4_hori_mini.o \
           input/connect/connect_wii.o \
           input/connect/connect_retrode.o \
           input/connect/connect_nesusb.o \
@@ -1925,9 +1948,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 
       OBJ += cheevos/cheevos.o \
              cheevos/badges.o \
-             cheevos/fixup.o \
-             cheevos/parser.o \
-             cheevos/hash.o \
+             cheevos/cheevos_memory.o \
+             cheevos/cheevos_parser.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
              deps/rcheevos/src/rcheevos/alloc.o \
              deps/rcheevos/src/rcheevos/compat.o \
@@ -2096,7 +2118,6 @@ endif
 ifeq ($(HAVE_COCOA),1)
    DEFINES += -DHAVE_MAIN
    OBJ += input/drivers/cocoa_input.o \
-          input/drivers_keyboard/keyboard_event_apple.o \
           ui/drivers/ui_cocoa.o \
           ui/drivers/cocoa/ui_cocoa_window.o \
           ui/drivers/cocoa/ui_cocoa_browser_window.o \
@@ -2185,6 +2206,15 @@ ifeq ($(HAVE_VITAGL), 1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/vitaGL/source -I$(DEPS_DIR)/vitaShaRK/include
    SOURCES := $(DEPS_DIR)/vitaGL/source $(DEPS_DIR)/vitaGL/source/utils
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
+endif
+
+#####################################
+### Android Play Feature Delivery ###
+### (Play Store build core        ###
+###  downloader)                  ###
+###############WIP###################
+ifeq ($(ANDROID), 1)
+   OBJ += play_feature_delivery/play_feature_delivery.o
 endif
 
 ##################################

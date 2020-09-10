@@ -38,8 +38,8 @@
 #define LOCK_VAR(x) LockData((void*)&x, sizeof(x))
 #define LOCK_FUNC(x) LockCode(x, (int)x##_End - (int)x)
 
+/* TODO/FIXME - static globals */
 static uint16_t normal_keys[LAST_KEYCODE + 1];
-
 static _go32_dpmi_seginfo old_kbd_int;
 static _go32_dpmi_seginfo kbd_int;
 
@@ -209,10 +209,11 @@ static int16_t dos_joypad_state(
       unsigned port)
 {
    unsigned i;
-   int16_t ret   = 0;
-   uint16_t *buf = dos_keyboard_state_get(port);
+   int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+   uint16_t *buf                        = dos_keyboard_state_get(port_idx);
 
-   if (port >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)

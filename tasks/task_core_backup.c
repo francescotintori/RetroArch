@@ -36,6 +36,10 @@
 #include "../core_info.h"
 #include "../core_backup.h"
 
+#if defined(ANDROID)
+#include "../play_feature_delivery/play_feature_delivery.h"
+#endif
+
 #define CORE_BACKUP_CHUNK_SIZE 4096
 
 enum core_backup_status
@@ -322,12 +326,11 @@ static void task_core_backup_handler(retro_task_t *task)
          break;
       case CORE_BACKUP_ITERATE:
          {
-            int64_t data_read    = 0;
             int64_t data_written = 0;
             uint8_t buffer[CORE_BACKUP_CHUNK_SIZE];
 
             /* Read a single chunk from the core file */
-            data_read = intfstream_read(backup_handle->core_file, buffer, sizeof(buffer));
+            int64_t data_read    = intfstream_read(backup_handle->core_file, buffer, sizeof(buffer));
 
             if (data_read < 0)
             {
@@ -377,7 +380,7 @@ static void task_core_backup_handler(retro_task_t *task)
 
             /* Update progress display */
             task_set_progress(task,
-                  (backup_handle->file_data_read * 100) / backup_handle->core_file_size);
+                  (int8_t)((backup_handle->file_data_read * 100) / backup_handle->core_file_size));
          }
          break;
       case CORE_BACKUP_CHECK_HISTORY:
@@ -779,6 +782,27 @@ static void task_core_restore_handler(retro_task_t *task)
                break;
             }
 
+#if defined(ANDROID)
+            /* If this is a Play Store build and the
+             * core is currently installed via
+             * play feature delivery, must delete
+             * the existing core before attempting
+             * to write any data */
+            if (play_feature_delivery_enabled())
+            {
+               const char *core_filename = path_basename(
+                     backup_handle->core_path);
+
+               if (play_feature_delivery_core_installed(core_filename) &&
+                   !play_feature_delivery_delete(core_filename))
+               {
+                  RARCH_ERR("[core restore] Failed to delete existing play feature delivery core: %s\n",
+                        backup_handle->core_path);
+                  backup_handle->status = CORE_RESTORE_END;
+                  break;
+               }
+            }
+#endif
             /* Open core file for writing */
             backup_handle->core_file = intfstream_open_file(
                   backup_handle->core_path, RETRO_VFS_FILE_ACCESS_WRITE,
@@ -856,7 +880,7 @@ static void task_core_restore_handler(retro_task_t *task)
 
             /* Update progress display */
             task_set_progress(task,
-                  (backup_handle->file_data_read * 100) / backup_handle->backup_file_size);
+                  (int8_t)((backup_handle->file_data_read * 100) / backup_handle->backup_file_size));
          }
          break;
       case CORE_RESTORE_END:

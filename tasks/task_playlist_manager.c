@@ -49,14 +49,14 @@ enum pl_manager_status
 
 typedef struct pl_manager_handle
 {
-   enum pl_manager_status status;
+   struct string_list *m3u_list;
+   char *playlist_name;
+   playlist_t *playlist;
    size_t list_size;
    size_t list_index;
-   struct string_list *m3u_list;
    size_t m3u_index;
-   char *playlist_name;
-   playlist_config_t playlist_config;
-   playlist_t *playlist;
+   playlist_config_t playlist_config; /* size_t alignment */
+   enum pl_manager_status status;
 } pl_manager_handle_t;
 
 /*********************/
@@ -729,7 +729,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
                task_set_progress(task, (pl_manager->m3u_index * 100) / pl_manager->m3u_list->size);
                
                /* Load M3U file */
-               m3u_file = m3u_file_init(m3u_path, M3U_FILE_SIZE);
+               m3u_file = m3u_file_init(m3u_path);
                
                if (m3u_file)
                {

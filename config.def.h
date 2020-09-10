@@ -76,6 +76,8 @@
 #ifdef HAVE_MATERIALUI
 /* Show icons to the left of each menu entry */
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
+/* Show system-specific icons in the playlists tab */
+#define DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE true
 #endif
 
 /* Material UI colour theme */
@@ -132,6 +134,8 @@
 #define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560
 
 #define DEFAULT_CRT_SWITCH_CENTER_ADJUST 0
+
+#define DEFAULT_CRT_SWITCH_PORCH_ADJUST 0
 
 #define DEFAULT_HISTORY_LIST_ENABLE true
 
@@ -316,6 +320,10 @@
 /* On resize and fullscreen, rendering area will stay 4:3 */
 #define DEFAULT_FORCE_ASPECT true
 
+/* Only applies to Android 9.0 (API 28) and up */
+/* Choose if the screen will be able to write around the notch or not */
+#define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
+
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
 #define DEFAULT_SHADER_ENABLE true
@@ -352,6 +360,11 @@
 #define DEFAULT_SHOW_HIDDEN_FILES false
 
 #define DEFAULT_OVERLAY_HIDE_IN_MENU true
+
+/* Automatically disable overlays when a
+ * controller is connected in port 1 */
+#define DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED false
+
 #define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR true
 
 #define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
@@ -361,6 +374,19 @@
 #else
 #define DEFAULT_INPUT_OVERLAY_OPACITY 0.7f
 #endif
+
+#define DEFAULT_INPUT_OVERLAY_SCALE_LANDSCAPE 1.0f
+#define DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_LANDSCAPE 0.0f
+#define DEFAULT_INPUT_OVERLAY_X_SEPARATION_LANDSCAPE 0.0f
+#define DEFAULT_INPUT_OVERLAY_Y_SEPARATION_LANDSCAPE 0.0f
+#define DEFAULT_INPUT_OVERLAY_X_OFFSET_LANDSCAPE 0.0f
+#define DEFAULT_INPUT_OVERLAY_Y_OFFSET_LANDSCAPE 0.0f
+
+#define DEFAULT_INPUT_OVERLAY_SCALE_PORTRAIT 1.0f
+#define DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_PORTRAIT 0.0f
+#define DEFAULT_INPUT_OVERLAY_X_SEPARATION_PORTRAIT 0.0f
+#define DEFAULT_INPUT_OVERLAY_X_OFFSET_PORTRAIT 0.0f
+#define DEFAULT_INPUT_OVERLAY_Y_OFFSET_PORTRAIT 0.0f
 
 #if defined(RARCH_MOBILE)
 #define DEFAULT_OVERLAY_AUTO_ROTATE true
@@ -518,8 +544,18 @@ static const bool content_show_netplay      = true;
 #endif
 #endif
 static const bool content_show_history      = true;
-static const bool content_show_add     	    = true;
+
+/* Specifies 'add content' visibility when using
+ * menus WITH a dedicated 'Import Content' tab */
+#define DEFAULT_MENU_CONTENT_SHOW_ADD true
+/* Specifies 'add content' visibility when using
+ * menus WITHOUT a dedicated 'Import Content' tab */
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+
 static const bool content_show_playlists    = true;
+#if defined(HAVE_LIBRETRODB)
+#define DEFAULT_MENU_CONTENT_SHOW_EXPLORE true
+#endif
 
 #ifdef HAVE_XMB
 static const unsigned xmb_alpha_factor      = 75;
@@ -571,6 +607,7 @@ static const bool rgui_shadows = false;
 static const unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
 static const bool rgui_extended_ascii = false;
+#define DEFAULT_RGUI_SWITCH_ICONS true
 #endif
 
 #ifdef HAVE_MENU
@@ -590,6 +627,9 @@ static const bool default_auto_shaders_enable = true;
 
 static const bool default_sort_savefiles_enable = false;
 static const bool default_sort_savestates_enable = false;
+static const bool default_sort_savefiles_by_content_enable = false;
+static const bool default_sort_savestates_by_content_enable = false;
+static const bool default_sort_screenshots_by_content_enable = false;
 
 static const bool default_savestates_in_content_dir = false;
 static const bool default_savefiles_in_content_dir = false;
@@ -668,6 +708,10 @@ static const float message_bgcolor_opacity = 1.0f;
 
 /* Watch shader files for changes and auto-apply as necessary. */
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
+
+/* Initialise file browser with last used directory
+ * when selecting shader presets/passes via the menu */
+#define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR false
 
 /* Screenshots named automatically. */
 #define DEFAULT_AUTO_SCREENSHOT_FILENAME true
@@ -1054,6 +1098,8 @@ static const int default_content_favorites_size = 200;
 #endif
 
 #define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
+
+#define DEFAULT_PLAYLIST_PORTABLE_PATHS false
 
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true

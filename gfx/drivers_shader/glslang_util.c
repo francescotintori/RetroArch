@@ -139,13 +139,14 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 bool glslang_read_shader_file(const char *path,
       struct string_list *output, bool root_file)
 {
+   size_t i;
    char tmp[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
-   size_t i;
    const char *basename      = NULL;
    uint8_t *buf              = NULL;
    int64_t buf_len           = 0;
-   struct string_list *lines = NULL;
+   struct string_list lines  = {0};
+   bool    ret               = false;
 
    tmp[0] = '\0';
    attr.i = 0;
@@ -173,7 +174,8 @@ bool glslang_read_shader_file(const char *path,
 
       /* Split into lines
        * (Blank lines must be included) */
-      lines = string_separate((char*)buf, "\n");
+      string_list_initialize(&lines);
+      ret = string_separate_noalloc(&lines, (char*)buf, "\n");
    }
 
    /* Buffer is no longer required - clean up */
@@ -181,32 +183,35 @@ bool glslang_read_shader_file(const char *path,
       free(buf);
 
    /* Sanity check */
-   if (!lines)
+   if (!ret)
       return false;
 
-   if (lines->size < 1)
+   if (lines.size < 1)
       goto error;
 
    /* If this is the 'parent' shader file, ensure that first
     * line is a 'VERSION' string */
    if (root_file)
    {
-      const char *line = lines->elems[0].data;
+      const char *line = lines.elems[0].data;
 
       if (strncmp("#version ", line, STRLEN_CONST("#version ")))
       {
-         RARCH_ERR("First line of the shader must contain a valid #version string.\n");
+         RARCH_ERR("First line of the shader must contain a valid "
+               "#version string.\n");
          goto error;
       }
 
       if (!string_list_append(output, line, attr))
          goto error;
 
-      /* Allows us to use #line to make dealing with shader errors easier.
-       * This is supported by glslang, but since we always use glslang statically,
-       * this is fine. */
-
-      if (!string_list_append(output, "#extension GL_GOOGLE_cpp_style_line_directive : require", attr))
+      /* Allows us to use #line to make dealing with shader 
+       * errors easier.
+       * This is supported by glslang, but since we always 
+       * use glslang statically, this is fine. */
+      if (!string_list_append(output,
+               "#extension GL_GOOGLE_cpp_style_line_directive : require",
+               attr))
          goto error;
    }
 
@@ -217,10 +222,9 @@ bool glslang_read_shader_file(const char *path,
       goto error;
 
    /* Loop through lines of file */
-   for (i = root_file ? 1 : 0; i < lines->size; i++)
+   for (i = root_file ? 1 : 0; i < lines.size; i++)
    {
-      unsigned push_line = 0;
-      const char *line   = lines->elems[i].data;
+      const char *line   = lines.elems[i].data;
 
       /* Check for 'include' statements */
       if (!strncmp("#include ", line, STRLEN_CONST("#include ")))
@@ -249,7 +253,10 @@ bool glslang_read_shader_file(const char *path,
 
          /* After including a file, use line directive
           * to pull it back to current file. */
-         push_line = 1;
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+               (unsigned)(i + 1), basename);
+         if (!string_list_append(output, tmp, attr))
+            goto error;
       }
       else if (!strncmp("#endif", line, STRLEN_CONST("#endif")) ||
                !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
@@ -259,32 +266,24 @@ bool glslang_read_shader_file(const char *path,
           * Add extra offset here since we're setting #line
           * for the line after this one.
           */
-         push_line = 2;
          if (!string_list_append(output, line, attr))
+            goto error;
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+               (unsigned)(i + 2), basename);
+         if (!string_list_append(output, tmp, attr))
             goto error;
       }
       else
          if (!string_list_append(output, line, attr))
             goto error;
-
-      if (push_line != 0)
-      {
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
-               (unsigned)(i + push_line), basename);
-         if (!string_list_append(output, tmp, attr))
-            goto error;
-      }
    }
 
-   string_list_free(lines);
+   string_list_deinitialize(&lines);
 
    return true;
 
 error:
-
-   if (lines)
-      string_list_free(lines);
-
+   string_list_deinitialize(&lines);
    return false;
 }
 
@@ -332,4 +331,24 @@ enum glslang_format glslang_find_format(const char *fmt)
    FMT(R32G32B32A32_SFLOAT);
 
    return SLANG_FORMAT_UNKNOWN;
+}
+
+void glslang_build_vec4(float *data, unsigned width, unsigned height)
+{
+   data[0] = (float)(width);
+   data[1] = (float)(height);
+   data[2] = 1.0f / (float)(width);
+   data[3] = 1.0f / (float)(height);
+}
+
+unsigned glslang_num_miplevels(unsigned width, unsigned height)
+{
+   unsigned size   = MAX(width, height);
+   unsigned levels = 0;
+   while (size)
+   {
+      levels++;
+      size >>= 1;
+   }
+   return levels;
 }

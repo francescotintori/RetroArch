@@ -379,7 +379,7 @@ void makefixed(void)
    puts("       subject to change. Applications should only use zlib.h.");
    puts("     */");
    puts("");
-   size = 1U << 9;
+   size = UINT32_C(1) << 9;
    printf("    static const code lenfix[%u] = {", size);
    low = 0;
    for (;;) {
@@ -390,7 +390,7 @@ void makefixed(void)
       putchar(',');
    }
    puts("\n    };");
-   size = 1U << 5;
+   size = UINT32_C(1) << 5;
    printf("\n    static const code distfix[%u] = {", size);
    low = 0;
    for (;;) {
@@ -427,7 +427,7 @@ static int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
    if (state->window == Z_NULL)
    {
       state->window = (unsigned char FAR *)
-         calloc(1U << state->wbits,
+         calloc(UINT64_C(1) << state->wbits,
                sizeof(unsigned char));
       if (state->window == Z_NULL)
          return 1;
@@ -436,7 +436,7 @@ static int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
    /* if window not in use yet, initialize */
    if (state->wsize == 0)
    {
-      state->wsize = 1U << state->wbits;
+      state->wsize = UINT64_C(1) << state->wbits;
       state->wnext = 0;
       state->whave = 0;
    }
@@ -550,7 +550,7 @@ static int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
 
 /* Return the low n bits of the bit accumulator (n < 16) */
 #define BITS(n) \
-   ((unsigned)hold & ((1U << (n)) - 1))
+   ((unsigned)hold & ((UINT32_C(1) << (n)) - 1))
 
 /* Remove n bits from the bit accumulator */
 #define DROPBITS(n) \
@@ -1447,7 +1447,7 @@ int inflateCopy(z_streamp dest, z_streamp source)
    if (state->window != Z_NULL)
    {
       window = (unsigned char FAR *)
-         calloc(1U << state->wbits, sizeof(unsigned char));
+         calloc(UINT64_C(1) << state->wbits, sizeof(unsigned char));
       if (window == Z_NULL)
       {
          free(copy);
@@ -1469,7 +1469,7 @@ int inflateCopy(z_streamp dest, z_streamp source)
 
    if (window != Z_NULL)
    {
-      wsize = 1U << state->wbits;
+      wsize = UINT32_C(1) << state->wbits;
       memcpy(window, state->window, wsize);
    }
    copy->window = window;
@@ -1511,7 +1511,7 @@ long inflateMark(z_streamp strm)
 
    if (  strm        == Z_NULL || 
          strm->state == Z_NULL)
-      return -(1L << 16);
+      return -(INT64_C(1) << 16);
 
    state = (struct inflate_state FAR *)strm->state;
    return (long)(((unsigned long)((long)state->back)) << 16) +

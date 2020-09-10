@@ -39,6 +39,24 @@
 #endif
 #endif
 
+#ifndef _XBOX
+#if defined(_WIN32)
+#if defined(_MSC_VER) && _MSC_VER >= 1500
+
+#ifndef HAVE_MMAP_WIN32
+#define HAVE_MMAP_WIN32
+#endif
+
+#elif !defined(_MSC_VER)
+
+#ifndef HAVE_MMAP_WIN32
+#define HAVE_MMAP_WIN32
+#endif
+#endif
+
+#endif
+#endif
+
 #define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
 
 #if _MSC_VER && !defined(__WINRT__)
@@ -177,9 +195,8 @@ ACHIEVEMENTS
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/badges.c"
-#include "../cheevos/fixup.c"
-#include "../cheevos/hash.c"
-#include "../cheevos/parser.c"
+#include "../cheevos/cheevos_memory.c"
+#include "../cheevos/cheevos_parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/compat.c"
@@ -702,7 +719,9 @@ INPUT
 #include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
+#ifdef _XBOX1
 #include "../input/drivers_joypad/xdk_joypad.c"
+#endif
 #elif defined(XENON)
 #include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
@@ -733,7 +752,11 @@ INPUT
 #endif
 
 #ifdef HAVE_XINPUT
+#ifdef HAVE_DINPUT
+#include "../input/drivers_joypad/xinput_hybrid_joypad.c"
+#else
 #include "../input/drivers_joypad/xinput_joypad.c"
+#endif
 #endif
 
 #if defined(__linux__) && !defined(ANDROID)
@@ -785,16 +808,12 @@ INPUT (HID)
 #include "../input/connect/connect_ps2adapter.c"
 #include "../input/connect/connect_psxadapter.c"
 #include "../input/connect/connect_retrode.c"
+#include "../input/connect/connect_ps4_hori_mini.c"
 #endif
 
 /*============================================================
  KEYBOARD EVENT
  ============================================================ */
-
-#ifdef __APPLE__
-#include "../input/drivers_keyboard/keyboard_event_apple.c"
-#endif
-
 #ifdef HAVE_XKBCOMMON
 #include "../input/drivers_keyboard/keyboard_event_xkb.c"
 #endif
@@ -878,6 +897,7 @@ AUDIO
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
+#include "../audio/drivers/ctr_dsp_thread_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
@@ -1020,7 +1040,6 @@ FILE
 #include "../libretro-common/file/file_path.c"
 #include "../libretro-common/file/file_path_io.c"
 #include "../file_path_special.c"
-#include "../file_path_str.c"
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
 #include "../libretro-common/lists/file_list.c"
@@ -1047,7 +1066,7 @@ FILE
 #if defined(HAVE_MMAP) && defined(BSD)
 #include "../libretro-common/file/nbio/nbio_unixmmap.c"
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(HAVE_MMAP_WIN32)
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
 #endif
 #if defined(ORBIS)
@@ -1349,6 +1368,9 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_displaylist.c"
+#ifdef HAVE_LIBRETRODB
+#include "../menu/menu_explore.c"
+#endif
 #endif
 
 #if defined(HAVE_LIBNX)
@@ -1642,3 +1664,10 @@ MISC FILE FORMATS
 TIME
 ============================================================ */
 #include "../libretro-common/time/rtime.c"
+
+/*============================================================
+ANDROID PLAY FEATURE DELIVERY
+============================================================ */
+#if defined(ANDROID)
+#include "../play_feature_delivery/play_feature_delivery.c"
+#endif

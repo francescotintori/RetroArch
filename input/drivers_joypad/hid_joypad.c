@@ -17,6 +17,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 
+/* TODO/FIXME - static global */
 static const hid_driver_t *generic_hid = NULL;
 
 static bool hid_joypad_init(void *data)
@@ -24,9 +25,6 @@ static bool hid_joypad_init(void *data)
    generic_hid = input_hid_init_first();
    if (!generic_hid)
        return false;
-
-   (void)data;
-
    return true;
 }
 
@@ -69,6 +67,10 @@ static int16_t hid_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -78,10 +80,10 @@ static int16_t hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if ((uint16_t)joykey != NO_BTN && hid_joypad_button(
-               port, (uint16_t)joykey))
+               port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(hid_joypad_axis(port, joyaxis)) 
+            ((float)abs(hid_joypad_axis(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

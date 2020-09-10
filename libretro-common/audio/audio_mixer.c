@@ -73,16 +73,16 @@ struct audio_mixer_sound
       struct
       {
          /* wav */
-         unsigned frames;
          const float* pcm;
+         unsigned frames;
       } wav;
 
 #ifdef HAVE_STB_VORBIS
       struct
       {
          /* ogg */
-         unsigned size;
          const void* data;
+         unsigned size;
       } ogg;
 #endif
 
@@ -90,8 +90,8 @@ struct audio_mixer_sound
       struct
       {
           /* flac */
-         unsigned size;
          const void* data;
+         unsigned size;
       } flac;
 #endif
 
@@ -99,8 +99,8 @@ struct audio_mixer_sound
       struct
       {
           /* mp */
-         unsigned size;
          const void* data;
+         unsigned size;
       } mp3;
 #endif
 
@@ -108,8 +108,8 @@ struct audio_mixer_sound
       struct
       {
          /* mod/s3m/xm */
-         unsigned size;
          const void* data;
+         unsigned size;
       } mod;
 #endif
    } types;
@@ -117,12 +117,6 @@ struct audio_mixer_sound
 
 struct audio_mixer_voice
 {
-   bool     repeat;
-   unsigned type;
-   float    volume;
-   audio_mixer_sound_t *sound;
-   audio_mixer_stop_cb_t stop_cb;
-
    union
    {
       struct
@@ -133,61 +127,67 @@ struct audio_mixer_voice
 #ifdef HAVE_STB_VORBIS
       struct
       {
-         unsigned    position;
-         unsigned    samples;
-         unsigned    buf_samples;
-         float*      buffer;
-         float       ratio;
          stb_vorbis *stream;
          void       *resampler_data;
          const retro_resampler_t *resampler;
+         float      *buffer;
+         unsigned    position;
+         unsigned    samples;
+         unsigned    buf_samples;
+         float       ratio;
       } ogg;
 #endif
 
 #ifdef HAVE_DR_FLAC
       struct
       {
-         unsigned    position;
-         unsigned    samples;
-         unsigned    buf_samples;
          float*      buffer;
-         float       ratio;
          drflac      *stream;
          void        *resampler_data;
          const retro_resampler_t *resampler;
+         unsigned    position;
+         unsigned    samples;
+         unsigned    buf_samples;
+         float       ratio;
       } flac;
 #endif
 
 #ifdef HAVE_DR_MP3
       struct
       {
-         unsigned    position;
-         unsigned    samples;
-         unsigned    buf_samples;
-         float*      buffer;
-         float       ratio;
          drmp3       stream;
          void        *resampler_data;
          const retro_resampler_t *resampler;
+         float*      buffer;
+         unsigned    position;
+         unsigned    samples;
+         unsigned    buf_samples;
+         float       ratio;
       } mp3;
 #endif
 
 #ifdef HAVE_IBXM
       struct
       {
-         unsigned          position;
-         unsigned          samples;
-         unsigned          buf_samples;
          int*              buffer;
          struct replay*    stream;
          struct module*    module;
+         unsigned          position;
+         unsigned          samples;
+         unsigned          buf_samples;
       } mod;
 #endif
    } types;
+   audio_mixer_sound_t *sound;
+   audio_mixer_stop_cb_t stop_cb;
+   unsigned type;
+   float    volume;
+   bool     repeat;
+
 };
 
 /* TODO/FIXME - static globals */
-static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {{0}};
+static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {0};
 static unsigned s_rate = 0;
 
 #ifdef HAVE_RWAV
@@ -908,8 +908,7 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
       float volume)
 {
    int i;
-   struct resampler_data info;
-   float temp_buffer[AUDIO_MIXER_TEMP_BUFFER] = { 0 };
+   float* temp_buffer = NULL;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
@@ -917,6 +916,9 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
    if (voice->types.ogg.position == voice->types.ogg.samples)
    {
 again:
+      if (temp_buffer == NULL)
+         temp_buffer = (float*)malloc(AUDIO_MIXER_TEMP_BUFFER * sizeof(float));
+
       temp_samples = stb_vorbis_get_samples_float_interleaved(
             voice->types.ogg.stream, 2, temp_buffer,
             AUDIO_MIXER_TEMP_BUFFER) * 2;
@@ -936,18 +938,21 @@ again:
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
          voice->type = AUDIO_MIXER_TYPE_NONE;
-         return;
+         goto cleanup;
       }
 
-      info.data_in              = temp_buffer;
-      info.data_out             = voice->types.ogg.buffer;
-      info.input_frames         = temp_samples / 2;
-      info.output_frames        = 0;
-      info.ratio                = voice->types.ogg.ratio;
-
       if (voice->types.ogg.resampler)
+      {
+         struct resampler_data info;
+         info.data_in = temp_buffer;
+         info.data_out = voice->types.ogg.buffer;
+         info.input_frames = temp_samples / 2;
+         info.output_frames = 0;
+         info.ratio = voice->types.ogg.ratio;
+
          voice->types.ogg.resampler->process(
                voice->types.ogg.resampler_data, &info);
+      }
       else
          memcpy(voice->types.ogg.buffer, temp_buffer,
                temp_samples * sizeof(float));
@@ -972,6 +977,10 @@ again:
 
    voice->types.ogg.position += buf_free;
    voice->types.ogg.samples  -= buf_free;
+
+cleanup:
+   if (temp_buffer != NULL)
+      free(temp_buffer);
 }
 #endif
 
@@ -1227,7 +1236,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
       }
    }
 
-   for (j = 0, sample = buffer; j < num_frames; j++, sample++)
+   for (j = 0, sample = buffer; j < num_frames * 2; j++, sample++)
    {
       if (*sample < -1.0f)
          *sample = -1.0f;

@@ -37,6 +37,10 @@ MSG_HASH(
    "Jeu en réseau"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Parcourir"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importer du contenu"
    )
@@ -93,11 +97,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Analyser du contenu"
+   "Importer du contenu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Analyser le contenu et l'ajouter à la base de données."
+   "Créer et mettre à jour les listes de lecture en analysant le contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -255,6 +259,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
    "Les vidéos précédemment lues apparaîtront ici."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Parcourir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "Parcourir tout le contenu correspondant à la base de données via une interface de recherche catégorisée."
    )
 
 /* Main Menu > Online Updater */
@@ -795,6 +807,10 @@ MSG_HASH(
    "Origine"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   "Saga"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    "Classification TGDB"
    )
@@ -996,7 +1012,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "Réglages"
+   "Navigateur de fichiers"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
@@ -1326,6 +1342,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Faire défiler cette valeur si l'image n'est pas centrée correctement à l'écran."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Ajustement de l'égalisation du balayage"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Parcourez ces options pour ajuster les paramètres d'égalisation du balayage afin de modifier la taille de l'image."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -2730,7 +2754,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Classer les sauvegardes par dossier"
+   "Trier les sauvegardes dans des dossiers nommés selon le nom du cœur"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -2738,11 +2762,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Classer les sauvegardes instantanées par dossier"
+   "Trier les sauvegardes instantanées dans des dossiers nommés selon le nom du cœur"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Classer les sauvegardes instantanées dans des dossiers nommés d'après le cœur utilisé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Trier les sauvegardes dans des dossiers nommés selon le dossier du contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Trie les fichiers de sauvegarde dans des dossiers nommés en fonction du dossier où le contenu est situé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Trier les sauvegardes instantanées dans des dossiers nommés selon le dossier du contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Trie les fichiers de sauvegarde instantanée dans des dossiers nommés en fonction du dossier où le contenu est situé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
@@ -2807,6 +2847,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Enregistrer les fichiers de sauvegarde instantanée sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation des temps de sauvegarde/chargement."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Trier les captures d'écran dans des dossiers nommés selon le nom du dossier de contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Trie les captures d'écran dans des dossiers nommés en fonction du dossier où le contenu est situé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -3231,7 +3279,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Sélectionne une disposition d'affichage depuis le navigateur de fichiers."
+   "Sélectionner une disposition d'affichage depuis le navigateur de fichiers."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -3322,11 +3370,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
-   "Intervalle de mise à jour de l'utilisation de la mémoire (en images)"
+   "Fréquence d'actualisation de l'utilisation mémoire (en images)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
-   "L'affichage de l'utilisation de la mémoire sera mis à jour à l'intervalle défini (en images)."
+   "L'affichage de l'utilisation de la mémoire sera actualisé à l'intervalle défini (en images)."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
@@ -3402,7 +3450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   "Règle la durée à l'écran du message de capture d'écran."
+   "Définir la durée d'affichage du message de capture d'écran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
@@ -3410,11 +3458,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
-   "Rapide"
+   "Courte"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
-   "Très rapide"
+   "Très courte"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
@@ -3422,11 +3470,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "Effet de flash de la capture d'écran"
+   "Effet de flash lors de la capture d'écran"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "Afficher un effet de flash blanc à l'écran avec une durée désirée lors de la capture de l'écran."
+   "Afficher un effet de flash blanc à l'écran lors de la capture de l'écran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
@@ -3434,7 +3482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
-   "Activé (rapide)"
+   "Activé (court)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -3589,7 +3637,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Permet de contrôler le menu avec un écran tactile." 
+   "Permet de contrôler le menu avec un écran tactile."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
@@ -3831,12 +3879,36 @@ MSG_HASH(
    "Affiche l'onglet d'importation de contenu dans le menu principal."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
+   "Afficher 'Importer du contenu'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
+   "Afficher une entrée 'Importer du contenu' dans le menu principal ou l'onglet/le sous-menu des listes de lecture."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Menu principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   "Menu des listes de lecture"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Afficher les listes de lecture"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
    "Affiche les onglets des listes de lecture dans le menu principal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
+   "Afficher l'onglet 'Parcourir'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
+   "Affiche l'onglet d'exploration de contenu dans le menu principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -4733,7 +4805,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limite le nombre d'entrées dans la liste des favoris. Une fois la limite atteinte, les nouveaux ajouts seront empêchés à moins que d'anciens éléments ne soient supprimés. Définir une valeur de -1 permet un nombre d'entrées 'illimitées' (99999). ATTENTION : Diminuer la valeur effacera des entrées existantes !"
+   "Limite le nombre d'entrées dans la liste des favoris. Une fois la limite atteinte, les nouveaux ajouts seront empêchés à moins que d'anciens éléments ne soient supprimés. Définir une valeur de -1 permet un nombre d'entrées 'illimitées'. ATTENTION : Diminuer la valeur effacera des entrées existantes !"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -4842,6 +4914,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
    "Effectue des tâches de maintenance sur les listes de lecture."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   "Listes de lecture portables"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   "Lorsque cette option est activée et que le dossier par défaut du 'Navigateur de fichiers' est également défini, cet emplacement est enregistré dans la liste de lecture. Lorsque la liste de lecture est chargée sur un autre système où cette même option est activée, la valeur du dossier défini par défaut est comparée à la valeur dans la liste de lecture; si celle-ci diffère, l'emplacement des entrées de la liste de lecture est automatiquement corrigé."
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -5049,7 +5129,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Définit le dossier de départ du navigateur de fichiers."
+   "Définir le dossier de départ du navigateur de fichiers."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -5426,6 +5506,84 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
    "Analyse le contenu sélectionné."
+   )
+
+/* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "Année de sortie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "Nombre de joueurs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "Région"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   "Rechercher le nom ..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   "Tout afficher"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "Filtre additionnel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
+   "Tout"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   "Ajouter un filtre additionnel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
+   "%u éléments"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "Par développeur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "Par éditeur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "Par année de sortie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "Par nombre de joueurs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "Par genre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   "Par origine"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   "Par région"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
+   "Par saga"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
+   "Par tag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   "Par nom du système"
    )
 
 /* Playlist > Playlist Item */
@@ -6096,6 +6254,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "Appliquer automatiquement les modifications apportées aux fichiers de shader sur le disque."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Recharger le dernier dossier de shaders utilisé"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Ouvre le navigateur de fichiers au dernier dossier utilisé lors du chargement de préréglages de shaders et passages."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -7116,6 +7282,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
    "Activer l'affichage des caractères ASCII non standard. Requis pour la compatibilité avec certaines langues occidentales non anglaises. A un impact modéré sur les performances."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   "Afficher les boutons ON/OFF"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
+   "Utiliser des boutons ON/OFF au lieu du texte Activé/Désactivé pour représenter l'activation des réglages dans le menu."
+   )
 
 /* RGUI: Settings Options */
 
@@ -7578,7 +7752,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Retire le nom des systèmes des listes de lecture. Par exemple, 'Sony - PlayStation' deviendra 'PlayStation'. (Redémarrage requis)"
+   "Retire le nom du fabricant des listes de lecture. Par exemple, 'Sony - PlayStation' deviendra 'PlayStation'. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -7609,6 +7783,14 @@ MSG_HASH(
    "Gruvbox sombre"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY,
+   "Mûre de Logan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL,
+   "Pirater le kernel"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Miniature secondaire"
    )
@@ -7633,7 +7815,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "Affiche les icônes à gauche des entrées du menu."
+   "Afficher les icônes à gauche des entrées du menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Icônes dans la liste de lecture"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Afficher les icônes spécifiques au système dans l'onglet des listes de lecture. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
@@ -7797,6 +7987,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
    "Cutie rouge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
+   "Pirater le kernel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
@@ -8812,7 +9006,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-   "Base de données - Filtre : Franchise"
+   "Base de données - Filtre : Saga"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
@@ -8861,10 +9055,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Configuration"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Téléchargements"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -9698,11 +9888,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_CHEAT_FILENAME,
-   "Saisir le nom de fichier de cheats"
+   "Saisir le nom du fichier de cheats"
    )
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
-   "Saisir le nom de fichier de préréglages"
+   "Saisir le nom du fichier de préréglages"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
@@ -10078,7 +10268,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY,
-   "Lecteur de disque virtuel."
+   "lecteur de disque virtuel."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,

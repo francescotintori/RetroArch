@@ -1,6 +1,5 @@
-#include "parser.h"
+#include "cheevos_parser.h"
 
-#include "hash.h"
 #include "util.h"
 
 #include <encodings/utf.h>
@@ -30,17 +29,28 @@
 #define CHEEVOS_JSON_KEY_SUCCESS      0x110461deU
 #define CHEEVOS_JSON_KEY_ERROR        0x0d2011cfU
 
+typedef struct
+{
+   const char *value;
+   int         is_key;
+   size_t      length;
+   unsigned    key_hash;
+} rcheevos_getvalueud_t;
+
 /*****************************************************************************
 Gets a value in a JSON
 *****************************************************************************/
 
-typedef struct
+static uint32_t rcheevos_djb2(const char* str, size_t length)
 {
-   unsigned    key_hash;
-   int         is_key;
-   const char* value;
-   size_t      length;
-} rcheevos_getvalueud_t;
+   const unsigned char* aux = (const unsigned char*)str;
+   uint32_t            hash = 5381;
+
+   while (length--)
+      hash = (hash << 5) + hash + *aux++;
+
+   return hash;
+}
 
 static int rcheevos_getvalue_key(void* userdata,
       const char* name, size_t length)
@@ -294,7 +304,7 @@ static char* rcheevos_unescape_string(const char* string, size_t length)
    char* buffer    = (char*)malloc(length + 1);
    char* buffer_it = buffer;
 
-   if (buffer == NULL)
+   if (!buffer)
       return NULL;
 
    while (string < end)
@@ -536,12 +546,12 @@ static int rcheevos_read_string(void* userdata,
    else if (ud->is_title)
    {
       ud->patchdata->title = rcheevos_unescape_string(string, length);
-      ud->is_title = 0;
+      ud->is_title         = 0;
    }
    else if (ud->is_richpresence)
    {
       ud->patchdata->richpresence_script = rcheevos_unescape_string(string, length);
-      ud->is_richpresence = 0;
+      ud->is_richpresence                = 0;
    }
 
    return 0;

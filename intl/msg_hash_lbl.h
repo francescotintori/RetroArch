@@ -51,6 +51,14 @@ MSG_HASH(
    "configurations_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_TAB,
+   "explore_tab"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_ITEM,
+   "explore_item"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TAB,
    "add_tab"
    )
@@ -657,6 +665,14 @@ MSG_HASH(
    "deferred_dropdown_box_list_disk_index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,
+   "deferred_dropdown_box_list_input_description"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,
+   "deferred_dropdown_box_list_input_description_kbd"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    "deferred_configurations_list"
    )
@@ -679,6 +695,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,
    "deferred_video_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST,
+   "deferred_explore_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_NETPLAY,
@@ -1065,6 +1085,10 @@ MSG_HASH(
    "update_installed_cores"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,
+   "switch_installed_cores_pfd"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_DIR,
    "content_directory"
    )
@@ -1371,6 +1395,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    "overlay_hide_in_menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "overlay_hide_when_gamepad_connected"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
@@ -1965,16 +1993,48 @@ MSG_HASH(
    "input_overlay"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_OVERLAY_SCALE,
-   "input_overlay_scale"
+   MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,
+   "input_overlay_scale_landscape"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_OVERLAY_CENTER_X,
-   "input_overlay_center_x"
+   MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "input_overlay_aspect_adjust_landscape"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_OVERLAY_CENTER_Y,
-   "input_overlay_center_y"
+   MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "input_overlay_x_separation_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "input_overlay_y_separation_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "input_overlay_x_offset_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "input_overlay_y_offset_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT,
+   "input_overlay_scale_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "input_overlay_aspect_adjust_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "input_overlay_x_separation_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "input_overlay_x_offset_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "input_overlay_y_offset_portrait"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PAL60_ENABLE,
@@ -2579,6 +2639,10 @@ MSG_HASH(
    "video_shader_watch_files"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "video_shader_remember_last_dir"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SHADER_OPTIONS,
    "shader_options"
    )
@@ -2625,6 +2689,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,
    "sort_savestates_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "sort_savefiles_by_content_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "sort_savestates_by_content_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "sort_screenshots_by_content_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -2893,6 +2969,10 @@ MSG_HASH(
 	  "crt_switch_center_adjust"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
+	  "crt_switch_porch_adjust"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
    "video_aspect_ratio"
    )
@@ -3052,6 +3132,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "video_synchronization_settings"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER,
+   "video_notch_write_over"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
    "video_output_settings"
@@ -3293,8 +3377,16 @@ MSG_HASH(
    "content_show_add"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY,
+   "content_show_add_entry"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,
    "content_show_playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE,
+   "content_show_explore"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,
@@ -3607,8 +3699,16 @@ MSG_HASH(
    "goto_video"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_GOTO_EXPLORE,
+   "goto_explore"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
    "materialui_icons_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "materialui_playlist_icons_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
@@ -3885,6 +3985,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,
    "rgui_extended_ascii"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_RGUI_SWITCH_ICONS,
+   "rgui_switch_icons"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,
@@ -4293,6 +4397,10 @@ MSG_HASH(
    "playlist_sublabel_last_played_style"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,
+   "playlist_portable_paths"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
    "help_send_debug_info"
    )
@@ -4645,4 +4753,28 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,
    "settings_views_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_PLAY,
+   "mixer_action_play"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_PLAY_LOOPED,
+   "mixer_action_play_looped"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "mixer_action_play_sequential"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_STOP,
+   "mixer_action_stop"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_REMOVE,
+   "mixer_action_remove"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_VOLUME,
+   "mixer_action_volume"
    )

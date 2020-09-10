@@ -84,10 +84,6 @@ MSG_HASH(
    "O conteúdo verificado aparecerá aqui."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Procurar conteúdo"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Mostrar Menu do Ambiente de trabalho"
    )
@@ -3008,6 +3004,8 @@ MSG_HASH(
 /* Import content > Manual Scan */
 
 
+/* Explore tab */
+
 /* Playlist > Playlist Item */
 
 MSG_HASH(
@@ -3808,10 +3806,6 @@ MSG_HASH(
    "Ícones do menu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "Ativar/desativar os ícones do menu que so mostrados no lado esquerdo das entradas do menu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    "Tema da cor do menu"
    )
@@ -4306,10 +4300,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Configurar"
    )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Transferências"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
    "Definições do Netplay"
@@ -4635,14 +4625,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "Dispositivo desconectado de uma porta válida."
-   )
-MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Fechado"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Ejetado"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -5247,10 +5229,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Falha no cálculo do tamanho da janela de visualização! Continuarão a serem utilizados dados em bruto. Provavelmente, irão surgir erros ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "Ícone do disco virtual na área de notificações."
    )
 MSG_HASH(
    MSG_FAILED,

@@ -51,6 +51,7 @@
 
 #include "../../input/input_osk.h"
 
+#include "../../file_path_special.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -87,20 +88,6 @@
 #if 0
 #define XMB_DEBUG
 #endif
-
-/* NOTE: If you change this you HAVE to update
- * xmb_alloc_node() and xmb_copy_node() */
-typedef struct
-{
-   float alpha;
-   float label_alpha;
-   float zoom;
-   float x;
-   float y;
-   uintptr_t icon;
-   uintptr_t content_icon;
-   char *fullpath;
-} xmb_node_t;
 
 enum
 {
@@ -249,37 +236,90 @@ enum
    XMB_SYSTEM_TAB_NETPLAY,
 #endif
    XMB_SYSTEM_TAB_ADD,
+#if defined(HAVE_LIBRETRODB)
+   XMB_SYSTEM_TAB_EXPLORE,
+#endif
 
    /* End of this enum - use the last one to determine num of possible tabs */
    XMB_SYSTEM_TAB_MAX_LENGTH
 };
 
+/* NOTE: If you change this you HAVE to update
+ * xmb_alloc_node() and xmb_copy_node() */
+typedef struct
+{
+   char *fullpath;
+   uintptr_t icon;
+   uintptr_t content_icon;
+   float alpha;
+   float label_alpha;
+   float zoom;
+   float x;
+   float y;
+} xmb_node_t;
+
 typedef struct xmb_handle
 {
-   bool mouse_show;
-   bool use_ps3_layout;
-   bool last_use_ps3_layout;
-   bool assets_missing;
-   bool is_playlist;
-   bool is_db_manager_list;
-   bool is_file_list;
-   bool is_quick_menu;
+   /* Keeps track of the last time tabs were switched
+    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
+   retro_time_t last_tab_switch_time; /* uint64_t alignment */
 
-   uint8_t system_tab_end;
-   uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
+   char *box_message;
+   char *bg_file_path;
+
+   file_list_t selection_buf_old; /* ptr alignment */
+   file_list_t horizontal_list;   /* ptr alignment */
+
+   xmb_node_t main_menu_node;
+#ifdef HAVE_IMAGEVIEWER
+   xmb_node_t images_tab_node;
+#endif
+   xmb_node_t music_tab_node;
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   xmb_node_t video_tab_node;
+#endif
+   xmb_node_t settings_tab_node;
+   xmb_node_t history_tab_node;
+   xmb_node_t favorites_tab_node;
+   xmb_node_t add_tab_node;
+#if defined(HAVE_LIBRETRODB)
+   xmb_node_t explore_tab_node;
+#endif
+   xmb_node_t netplay_tab_node;
+   menu_input_pointer_t pointer;
+
+   font_data_t *font;
+   font_data_t *font2;
+   video_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block2;
+
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
+   struct {
+      gfx_thumbnail_t right;
+      gfx_thumbnail_t left;
+      gfx_thumbnail_t savestate;
+   } thumbnails;
+
+   struct
+   {
+      uintptr_t bg;
+      uintptr_t list[XMB_TEXTURE_LAST];
+   } textures;
+
+   size_t categories_selection_ptr;
+   size_t categories_selection_ptr_old;
+   size_t selection_ptr_old;
+   size_t fullscreen_thumbnail_selection;
 
    int depth;
    int old_depth;
    int icon_size;
    int cursor_size;
 
-   size_t categories_selection_ptr;
-   size_t categories_selection_ptr_old;
-   size_t selection_ptr_old;
-
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
 
+   float fullscreen_thumbnail_alpha;
    float x;
    float alpha;
    float above_subitem_offset;
@@ -314,61 +354,28 @@ typedef struct xmb_handle
    float categories_active_zoom;
    float categories_active_alpha;
 
+   uint8_t system_tab_end;
+   uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
+
    char title_name[255];
-   char *box_message;
-   char *bg_file_path;
-
-   file_list_t *selection_buf_old;
-   file_list_t *horizontal_list;
-
-   struct
-   {
-      uintptr_t bg;
-      uintptr_t list[XMB_TEXTURE_LAST];
-   } textures;
-
-   xmb_node_t main_menu_node;
-#ifdef HAVE_IMAGEVIEWER
-   xmb_node_t images_tab_node;
-#endif
-   xmb_node_t music_tab_node;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   xmb_node_t video_tab_node;
-#endif
-   xmb_node_t settings_tab_node;
-   xmb_node_t history_tab_node;
-   xmb_node_t favorites_tab_node;
-   xmb_node_t add_tab_node;
-   xmb_node_t netplay_tab_node;
-   menu_input_pointer_t pointer;
-
-   font_data_t *font;
-   font_data_t *font2;
-   video_font_raster_block_t raster_block;
-   video_font_raster_block_t raster_block2;
-
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-   struct {
-      gfx_thumbnail_t right;
-      gfx_thumbnail_t left;
-      gfx_thumbnail_t savestate;
-   } thumbnails;
    /* These have to be huge, because global->name.savestate
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
     * warnings...) */
    char savestate_thumbnail_file_path[8204];
    char prev_savestate_thumbnail_file_path[8204];
-   bool fullscreen_thumbnails_available;
-   bool show_fullscreen_thumbnails;
-   float fullscreen_thumbnail_alpha;
-   size_t fullscreen_thumbnail_selection;
    char fullscreen_thumbnail_label[255];
 
-   /* Keeps track of the last time tabs were switched
-    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
-   retro_time_t last_tab_switch_time;
-
+   bool fullscreen_thumbnails_available;
+   bool show_fullscreen_thumbnails;
+   bool mouse_show;
+   bool use_ps3_layout;
+   bool last_use_ps3_layout;
+   bool assets_missing;
+   bool is_playlist;
+   bool is_db_manager_list;
+   bool is_file_list;
+   bool is_quick_menu;
 } xmb_handle_t;
 
 float scale_mod[8] = {
@@ -537,9 +544,60 @@ float gradient_midgar[16] = {
    32/255.0,  32/255.0,  32/255.0, 1.0,
 };
 
+static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
+{
+   float iy = xmb->icon_spacing_vertical;
+
+   if (i < (int)current)
+      if (xmb->depth > 1)
+         iy *= (i - (int)current + xmb->above_subitem_offset);
+      else
+         iy *= (i - (int)current + xmb->above_item_offset);
+   else
+      iy    *= (i - (int)current + xmb->under_item_offset);
+
+   if (i == (int)current)
+      iy = xmb->icon_spacing_vertical * xmb->active_item_factor;
+
+   return iy;
+}
+
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
-      unsigned *first, unsigned *last);
+      unsigned *first, unsigned *last)
+{
+   unsigned j;
+   float    base_y = xmb->margins_screen_top;
+
+   *first = 0;
+   *last  = (unsigned)(list_size ? list_size - 1 : 0);
+
+   if (current)
+   {
+      for (j = current; j-- > 0; )
+      {
+         float bottom = xmb_item_y(xmb, j, current)
+            + base_y + xmb->icon_size;
+
+         if (bottom < 0)
+            break;
+
+         *first = j;
+      }
+   }
+
+   for (j = current+1; j < list_size; j++)
+   {
+      float top = xmb_item_y(xmb, j, current) + base_y;
+
+      if (top > height)
+         break;
+
+      *last = j;
+   }
+}
+
 
 const char* xmb_theme_ident(void)
 {
@@ -713,9 +771,7 @@ static size_t xmb_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
-         if (xmb && xmb->horizontal_list)
-            return file_list_get_size(xmb->horizontal_list);
-         break;
+         return file_list_get_size(&xmb->horizontal_list);
       case MENU_LIST_TABS:
          return xmb->system_tab_end;
    }
@@ -740,34 +796,15 @@ static void *xmb_list_get_entry(void *data,
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         if (xmb && xmb->horizontal_list)
-            list_size = file_list_get_size(xmb->horizontal_list);
+         list_size = file_list_get_size(&xmb->horizontal_list);
          if (i < list_size)
-            return (void*)&xmb->horizontal_list->list[i];
+            return (void*)&xmb->horizontal_list.list[i];
          break;
       default:
          break;
    }
 
    return NULL;
-}
-
-static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
-{
-   float iy = xmb->icon_spacing_vertical;
-
-   if (i < (int)current)
-      if (xmb->depth > 1)
-         iy *= (i - (int)current + xmb->above_subitem_offset);
-      else
-         iy *= (i - (int)current + xmb->above_item_offset);
-   else
-      iy    *= (i - (int)current + xmb->under_item_offset);
-
-   if (i == (int)current)
-      iy = xmb->icon_spacing_vertical * xmb->active_item_factor;
-
-   return iy;
 }
 
 static void xmb_draw_icon(
@@ -816,7 +853,7 @@ static void xmb_draw_icon(
    draw.matrix_data     = mymat;
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id     = 0;
+   draw.pipeline_id     = 0;
 
    if (xmb_shadows_enable)
    {
@@ -902,24 +939,24 @@ static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
    unsigned i, y_position;
-   int x, y, longest_width = 0;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   int x, y, longest_width  = 0;
    float line_height        = 0;
    int usable_width         = 0;
-   struct string_list *list = NULL;
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   struct string_list list  = {0};
 
-   wrapped_message[0] = '\0';
+   wrapped_message[0]       = '\0';
 
    /* Sanity check */
    if (string_is_empty(message) ||
        !xmb ||
        !xmb->font)
-      goto end;
+      return;
 
    usable_width = (int)video_width - (xmb->margins_dialog * 8);
 
    if (usable_width < 1)
-      goto end;
+      return;
 
    /* Split message into lines */
    word_wrap(
@@ -927,10 +964,16 @@ static void xmb_render_messagebox_internal(
          usable_width / (xmb->font_size * 0.6f),
          true, 0);
 
-   list = string_split(wrapped_message, "\n");
+   string_list_initialize(&list);
 
-   if (!list || list->elems == 0)
-      goto end;
+   if (
+            !string_split_noalloc(&list, wrapped_message, "\n")
+         || list.elems == 0
+      )
+   {
+      string_list_deinitialize(&list);
+      return;
+   }
 
    line_height      = xmb->font->size * 1.2;
 
@@ -939,12 +982,12 @@ static void xmb_render_messagebox_internal(
       y_position    = video_height / 4;
 
    x                = video_width  / 2;
-   y                = y_position - (list->size-1) * line_height / 2;
+   y                = y_position - (list.size-1) * line_height / 2;
 
    /* find the longest line width */
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *msg = list->elems[i].data;
+      const char *msg = list.elems[i].data;
 
       if (!string_is_empty(msg))
       {
@@ -966,15 +1009,15 @@ static void xmb_render_messagebox_internal(
          y + xmb->margins_slice - xmb->margins_dialog,
          256, 256,
          longest_width + xmb->margins_dialog * 2,
-         line_height * list->size + xmb->margins_dialog * 2,
+         line_height * list.size + xmb->margins_dialog * 2,
          video_width, video_height,
          NULL,
          xmb->margins_slice, xmb->last_scale_factor,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
 
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *msg = list->elems[i].data;
+      const char *msg = list.elems[i].data;
 
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
@@ -995,9 +1038,7 @@ static void xmb_render_messagebox_internal(
             input_event_get_osk_ptr(),
             0xffffffff);
 
-end:
-   if (list)
-      string_list_free(list);
+   string_list_deinitialize(&list);
 }
 
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -1057,7 +1098,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                   strlcpy(path, global->name.savestate, sizeof(path));
             }
 
-            strlcat(path, ".png", sizeof(path));
+            strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
             if (path_is_valid(path))
                strlcpy(
@@ -1220,9 +1261,24 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       /* Playlist content */
       if (string_is_empty(s))
       {
-         size_t selection = menu_navigation_get_selection();
+         size_t selection      = menu_navigation_get_selection();
+         size_t list_size      = menu_entries_get_size();
+         file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
+         bool playlist_valid   = false;
+         size_t playlist_index = selection;
+
+         /* Get playlist index corresponding
+          * to the selected entry */
+         if (list &&
+             (selection < list_size) &&
+             (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+         {
+            playlist_valid = true;
+            playlist_index = list->list[selection].entry_idx;
+         }
+
          gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data,
-               playlist_get_cached(), selection);
+               playlist_valid ? playlist_get_cached() : NULL, playlist_index);
          xmb->fullscreen_thumbnails_available = true;
       }
    }
@@ -1255,7 +1311,6 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       size_t selection           = menu_navigation_get_selection();
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
       xmb_node_t *node           = (xmb_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
-
 
       if (node)
       {
@@ -1663,10 +1718,10 @@ static xmb_node_t *xmb_node_allocate_userdata(
    }
 
    tmp = (xmb_node_t*)file_list_get_userdata_at_offset(
-         xmb->horizontal_list, i);
+         &xmb->horizontal_list, i);
    xmb_free_node(tmp);
 
-   file_list_set_userdata(xmb->horizontal_list, i, node);
+   file_list_set_userdata(&xmb->horizontal_list, i, node);
 
    return node;
 }
@@ -1675,7 +1730,7 @@ static xmb_node_t* xmb_get_userdata_from_horizontal_list(
       xmb_handle_t *xmb, unsigned i)
 {
    return (xmb_node_t*)
-      file_list_get_userdata_at_offset(xmb->horizontal_list, i);
+      file_list_get_userdata_at_offset(&xmb->horizontal_list, i);
 }
 
 static void xmb_push_animations(xmb_node_t *node,
@@ -1745,8 +1800,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
    if (menu_dynamic_wallpaper_enable)
    {
-      size_t path_size = PATH_MAX_LENGTH * sizeof(char);
-      char       *path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char path[PATH_MAX_LENGTH];
       char       *tmp  = string_replace_substring(xmb->title_name, "/", " ");
 
       path[0]          = '\0';
@@ -1757,14 +1811,14 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
                path,
                dir_dynamic_wallpapers,
                tmp,
-               path_size);
+               sizeof(path));
          free(tmp);
       }
 
-      strlcat(path, ".png", path_size);
+      strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
       if (!path_is_valid(path))
-         fill_pathname_application_special(path, path_size,
+         fill_pathname_application_special(path, sizeof(path),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
       if (!string_is_equal(path, xmb->bg_file_path))
@@ -1779,8 +1833,6 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
             xmb->bg_file_path = strdup(path);
          }
       }
-
-      free(path);
    }
 
    end = file_list_get_size(list);
@@ -1825,8 +1877,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
    else
    {
       const char *path = NULL;
+
       menu_entries_get_at_offset(
-            xmb->horizontal_list,
+            &xmb->horizontal_list,
             xmb->categories_selection_ptr - (xmb->system_tab_end + 1),
             &path, NULL, NULL, NULL, NULL);
 
@@ -1835,6 +1888,10 @@ static void xmb_set_title(xmb_handle_t *xmb)
 
       fill_pathname_base_noext(
             xmb->title_name, path, sizeof(xmb->title_name));
+
+      /* Add current search terms */
+      menu_driver_search_append_terms_string(
+            xmb->title_name, sizeof(xmb->title_name));
    }
 }
 
@@ -1864,6 +1921,10 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_ADD:
          return &xmb->add_tab_node;
+#if defined(HAVE_LIBRETRODB)
+      case XMB_SYSTEM_TAB_EXPLORE:
+         return &xmb->explore_tab_node;
+#endif
       default:
          if (i > xmb->system_tab_end)
             return xmb_get_userdata_from_horizontal_list(
@@ -1963,7 +2024,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    if (xmb->categories_selection_ptr > xmb->categories_selection_ptr_old)
       dir = 1;
 
-   xmb_list_switch_old(xmb, xmb->selection_buf_old,
+   xmb_list_switch_old(xmb, &xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
 
    /* Check if we are to have horizontal animations. */
@@ -2031,7 +2092,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
       if (!node)
          continue;
 
-      file_list_get_at_offset(xmb->horizontal_list, i,
+      file_list_get_at_offset(&xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path || !string_ends_with_size(path, ".lpl",
@@ -2052,9 +2113,9 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 
    menu_displaylist_info_init(&info);
 
-   info.list                    = xmb->horizontal_list;
-   info.path                    = strdup(dir_playlist);
-   info.label                   = strdup(
+   info.list                        = &xmb->horizontal_list;
+   info.path                        = strdup(dir_playlist);
+   info.label                       = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
    info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
@@ -2065,7 +2126,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
       {
          size_t i;
-         for (i = 0; i < xmb->horizontal_list->size; i++)
+         for (i = 0; i < xmb->horizontal_list.size; i++)
             xmb_node_allocate_userdata(xmb, (unsigned)i);
          menu_displaylist_process(&info);
       }
@@ -2128,47 +2189,36 @@ static void xmb_context_reset_horizontal_list(
             continue;
       }
 
-      file_list_get_at_offset(xmb->horizontal_list, i,
+      file_list_get_at_offset(&xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path)
          continue;
 
-      if (!string_ends_with_size(path, ".lpl",
+      if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
-         continue;
-
       {
          struct texture_image ti;
-         char *sysname             = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *iconpath            = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *texturepath         = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *content_texturepath = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
+         char sysname[PATH_MAX_LENGTH];
+         char iconpath[PATH_MAX_LENGTH];
+         char texturepath[PATH_MAX_LENGTH];
+         char content_texturepath[PATH_MAX_LENGTH];
 
-         iconpath[0]    = sysname[0] =
+         iconpath[0]       = sysname[0]             =
             texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path,
-               PATH_MAX_LENGTH * sizeof(char));
-
-         fill_pathname_application_special(iconpath,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+         fill_pathname_application_special(iconpath, sizeof(iconpath),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
          fill_pathname_join_concat(texturepath, iconpath, sysname,
-               ".png",
-               PATH_MAX_LENGTH * sizeof(char));
+               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, iconpath, "default",
-               ".png",
-               PATH_MAX_LENGTH * sizeof(char));
+               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
 
          ti.width         = 0;
          ti.height        = 0;
@@ -2187,19 +2237,19 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         fill_pathname_join_delim(sysname, sysname, "content.png",
-               '-', PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, iconpath, PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname_join_delim(sysname, sysname,
+               FILE_PATH_CONTENT_BASENAME, '-',
+               sizeof(sysname));
+         strlcat(content_texturepath, iconpath, sizeof(content_texturepath));
+         strlcat(content_texturepath, sysname,  sizeof(content_texturepath));
 
          /* If the content icon doesn't exist return default-content */
 
          if (!path_is_valid(content_texturepath))
          {
-            strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
+            strlcat(iconpath, "default", sizeof(iconpath));
             fill_pathname_join_delim(content_texturepath, iconpath,
-                  "content.png", '-',
-                  PATH_MAX_LENGTH * sizeof(char));
+                  FILE_PATH_CONTENT_BASENAME, '-', sizeof(content_texturepath));
          }
 
          if (image_texture_load(&ti, content_texturepath))
@@ -2213,11 +2263,6 @@ static void xmb_context_reset_horizontal_list(
 
             image_texture_free(&ti);
          }
-
-         free(sysname);
-         free(iconpath);
-         free(texturepath);
-         free(content_texturepath);
       }
    }
 
@@ -2227,24 +2272,13 @@ static void xmb_context_reset_horizontal_list(
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
    xmb_context_destroy_horizontal_list(xmb);
-   if (xmb->horizontal_list)
-   {
-      xmb_free_list_nodes(xmb->horizontal_list, false);
-      file_list_free(xmb->horizontal_list);
-   }
-   xmb->horizontal_list           = NULL;
+
+   xmb_free_list_nodes(&xmb->horizontal_list, false);
+   file_list_deinitialize(&xmb->horizontal_list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   xmb->horizontal_list           = (file_list_t*)
-      malloc(sizeof(file_list_t));
-
-   xmb->horizontal_list->list     = NULL;
-   xmb->horizontal_list->capacity = 0;
-   xmb->horizontal_list->size     = 0;
-
-   if (xmb->horizontal_list)
-      xmb_init_horizontal_list(xmb);
+   xmb_init_horizontal_list(xmb);
 
    xmb_context_reset_horizontal_list(xmb);
 }
@@ -2301,7 +2335,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 
    xmb_list_open_horizontal_list(xmb);
 
-   xmb_list_open_old(xmb, xmb->selection_buf_old,
+   xmb_list_open_old(xmb, &xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
    xmb_list_open_new(xmb, selection_buf,
          dir, selection);
@@ -2389,14 +2423,14 @@ static void xmb_populate_entries(void *data,
    xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
 
+   xmb_set_title(xmb);
+
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       return;
    }
-
-   xmb_set_title(xmb);
 
    if (xmb->categories_selection_ptr != xmb->categories_active_idx_old)
       xmb_list_switch(xmb);
@@ -2504,6 +2538,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_FAVORITES: /* "Start Directory" */
       case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
+      case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
+         return xmb->textures.list[XMB_TEXTURE_ADD];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
          return xmb->textures.list[XMB_TEXTURE_RDB];
 
@@ -2518,6 +2554,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_MOVIE];
       case MENU_ENUM_LABEL_GOTO_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
+      case MENU_ENUM_LABEL_GOTO_EXPLORE:
+         return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
 
       case MENU_ENUM_LABEL_LOAD_DISC:
       case MENU_ENUM_LABEL_DUMP_DISC:
@@ -2539,6 +2577,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_SETTINGS:
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
       case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
+      case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
@@ -2721,6 +2760,14 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
          return xmb->textures.list[XMB_TEXTURE_MOVIE];
+#ifdef HAVE_LIBRETRODB
+      case MENU_ENUM_LABEL_EXPLORE_ITEM:
+      {
+         uintptr_t icon = menu_explore_get_entry_icon(type);
+         if (icon) return icon;
+         break;
+      }
+#endif
       default:
          break;
    }
@@ -2829,6 +2876,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ROOM_RELAY:
          return xmb->textures.list[XMB_TEXTURE_ROOM_RELAY];
 #endif
+      case MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE:
+         return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
    }
 
 #ifdef HAVE_CHEEVOS
@@ -2848,7 +2897,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
    if (
          (type >= MENU_SETTINGS_INPUT_BEGIN) &&
-         (type <= MENU_SETTINGS_INPUT_DESC_END)
+         (type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
       )
       {
          unsigned input_id;
@@ -2858,6 +2907,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             input_id = MENU_SETTINGS_INPUT_BEGIN;
             if ( type == input_id + 1)
                return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
+#ifdef HAVE_LIBNX
+            // account for the additional split joycon option in Input # Binds
+            input_id++;
+#endif
             if ( type == input_id + 2)
                return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
             if ( type == input_id + 3)
@@ -2878,10 +2931,17 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          else
          {
             /* Quickmenu controls repeats the same icons for all users */
-            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-            while (type > (input_id + 23))
+            if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
             {
-               input_id = (input_id + 24) ;
+               input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+               while (type > (input_id + 23))
+                  input_id = (input_id + 24);
+            }
+            else
+            {
+               input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+               while (type > (input_id + 15))
+                  input_id = (input_id + 16);
             }
          }
          /* This is utilized for both Input # Binds and Quickmenu controls */
@@ -2943,41 +3003,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 
-}
-
-static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
-      unsigned height, size_t list_size, unsigned current,
-      unsigned *first, unsigned *last)
-{
-   unsigned j;
-   float    base_y = xmb->margins_screen_top;
-
-   *first = 0;
-   *last  = (unsigned)(list_size ? list_size - 1 : 0);
-
-   if (current)
-   {
-      for (j = current; j-- > 0; )
-      {
-         float bottom = xmb_item_y(xmb, j, current)
-            + base_y + xmb->icon_size;
-
-         if (bottom < 0)
-            break;
-
-         *first = j;
-      }
-   }
-
-   for (j = current+1; j < list_size; j++)
-   {
-      float top = xmb_item_y(xmb, j, current) + base_y;
-
-      if (top > height)
-         break;
-
-      *last = j;
-   }
 }
 
 static int xmb_draw_item(
@@ -3065,7 +3090,8 @@ static int xmb_draw_item(
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
-      char entry_path[PATH_MAX_LENGTH] = {0};
+      char entry_path[PATH_MAX_LENGTH];
+      entry_path[0] = '\0';
       strlcpy(entry_path, entry.path, sizeof(entry_path));
 
       fill_short_pathname_representation(entry_path, entry_path,
@@ -3453,7 +3479,7 @@ static void xmb_draw_items(
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   if (list == xmb->selection_buf_old)
+   if (list == &xmb->selection_buf_old)
    {
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, current);
@@ -3726,7 +3752,6 @@ static bool xmb_shader_pipeline_active(unsigned menu_shader_pipeline)
 }
  
 static void xmb_draw_bg(
-      xmb_handle_t *xmb,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -3751,8 +3776,8 @@ static void xmb_draw_bg(
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
    draw.prim_type            = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id          = 0;
-   draw.pipeline.active      = xmb_shader_pipeline_active(menu_shader_pipeline);
+   draw.pipeline_id          = 0;
+   draw.pipeline_active      = xmb_shader_pipeline_active(menu_shader_pipeline);
 
    gfx_display_blend_begin(userdata);
    gfx_display_set_viewport(video_width, video_height);
@@ -3776,24 +3801,24 @@ static void xmb_draw_bg(
             menu_wallpaper_opacity
             );
 
-      draw.pipeline.id = VIDEO_SHADER_MENU_2;
+      draw.pipeline_id = VIDEO_SHADER_MENU_2;
 
       switch (menu_shader_pipeline)
       {
          case XMB_SHADER_PIPELINE_RIBBON:
-            draw.pipeline.id  = VIDEO_SHADER_MENU;
+            draw.pipeline_id  = VIDEO_SHADER_MENU;
             break;
          case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_3;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_3;
             break;
          case XMB_SHADER_PIPELINE_SNOW:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_4;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_4;
             break;
          case XMB_SHADER_PIPELINE_BOKEH:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_5;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_5;
             break;
          case XMB_SHADER_PIPELINE_SNOWFLAKE:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_6;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_6;
             break;
          default:
             break;
@@ -3877,7 +3902,7 @@ static void xmb_draw_dark_layer(
    draw.matrix_data = NULL;
    draw.texture     = gfx_display_white_texture;
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
+   draw.pipeline_id = 0;
 
    gfx_display_blend_begin(userdata);
    gfx_display_draw(&draw, userdata,
@@ -4519,7 +4544,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    gfx_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
-         xmb,
          userdata,
          video_width,
          video_height,
@@ -4539,10 +4563,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (selection > 1)
    {
-      /* skip 25 utf8 multi-byte chars */
+      /* skip 25 UTF8 multi-byte chars */
       char *end = title_truncated;
 
-      for(i = 0; i < 25 && *end; i++)
+      for (i = 0; i < 25 && *end; i++)
       {
          end++;
          while ((*end & 0xC0) == 0x80)
@@ -5013,7 +5037,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          video_height,
          xmb_shadows_enable,
          xmb,
-         xmb->selection_buf_old,
+         &xmb->selection_buf_old,
          xmb->selection_ptr_old,
          (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
          ? xmb->categories_selection_ptr :
@@ -5256,14 +5280,14 @@ static void xmb_layout(xmb_handle_t *xmb)
       return;
 
    current = (unsigned)xmb->selection_ptr_old;
-   end     = (unsigned)file_list_get_size(xmb->selection_buf_old);
+   end     = (unsigned)file_list_get_size(&xmb->selection_buf_old);
 
    for (i = 0; i < end; i++)
    {
       float         ia = 0;
       float         iz = xmb->items_passive_zoom;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            xmb->selection_buf_old, i);
+            &xmb->selection_buf_old, i);
 
       if (!node)
          continue;
@@ -5399,15 +5423,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    *userdata = xmb;
 
-   xmb->selection_buf_old             = (file_list_t*)
-      malloc(sizeof(file_list_t));
-
-   if (!xmb->selection_buf_old)
-      goto error;
-
-   xmb->selection_buf_old->list       = NULL;
-   xmb->selection_buf_old->capacity   = 0;
-   xmb->selection_buf_old->size       = 0;
+   file_list_initialize(&xmb->selection_buf_old);
 
    xmb->categories_active_idx         = 0;
    xmb->categories_active_idx_old     = 0;
@@ -5446,6 +5462,11 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
+#endif
+
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    /* TODO/FIXME - we don't use framebuffer at all
@@ -5457,14 +5478,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    gfx_display_allocate_white_texture();
 
-   xmb->horizontal_list           = (file_list_t*)malloc(sizeof(file_list_t));
+   file_list_initialize(&xmb->horizontal_list);
 
-   xmb->horizontal_list->list     = NULL;
-   xmb->horizontal_list->capacity = 0;
-   xmb->horizontal_list->size     = 0;
-
-   if (xmb->horizontal_list)
-      xmb_init_horizontal_list(xmb);
+   xmb_init_horizontal_list(xmb);
 
    xmb_init_ribbon(xmb);
 
@@ -5497,15 +5513,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 error:
    free(menu);
 
-   if (xmb->selection_buf_old)
-      free(xmb->selection_buf_old);
-   xmb->selection_buf_old = NULL;
-   if (xmb->horizontal_list)
-   {
-      xmb_free_list_nodes(xmb->horizontal_list, false);
-      file_list_free(xmb->horizontal_list);
-   }
-   xmb->horizontal_list = NULL;
+   xmb_free_list_nodes(&xmb->horizontal_list, false);
+   file_list_deinitialize(&xmb->selection_buf_old);
+   file_list_deinitialize(&xmb->horizontal_list);
    gfx_animation_unset_update_time_cb();
    return NULL;
 }
@@ -5516,20 +5526,10 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
-      if (xmb->selection_buf_old)
-      {
-         xmb_free_list_nodes(xmb->selection_buf_old, false);
-         file_list_free(xmb->selection_buf_old);
-      }
-
-      if (xmb->horizontal_list)
-      {
-         xmb_free_list_nodes(xmb->horizontal_list, false);
-         file_list_free(xmb->horizontal_list);
-      }
-
-      xmb->selection_buf_old = NULL;
-      xmb->horizontal_list   = NULL;
+      xmb_free_list_nodes(&xmb->selection_buf_old, false);
+      xmb_free_list_nodes(&xmb->horizontal_list, false);
+      file_list_deinitialize(&xmb->selection_buf_old);
+      file_list_deinitialize(&xmb->horizontal_list);
 
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);
@@ -5928,6 +5928,12 @@ static void xmb_context_reset_textures(
    xmb->add_tab_node.alpha      = xmb->categories_active_alpha;
    xmb->add_tab_node.zoom       = xmb->categories_active_zoom;
 
+#if defined(HAVE_LIBRETRODB)
+   xmb->explore_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+   xmb->explore_tab_node.alpha  = xmb->categories_active_alpha;
+   xmb->explore_tab_node.zoom   = xmb->categories_active_zoom;
+#endif
+
 #ifdef HAVE_NETWORKING
    xmb->netplay_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_NETPLAY];
    xmb->netplay_tab_node.alpha  = xmb->categories_active_alpha;
@@ -5986,8 +5992,8 @@ static void xmb_context_reset_background(const char *iconpath)
       char path[PATH_MAX_LENGTH];
       path[0] = '\0';
 
-      fill_pathname_join(path, iconpath, "bg.png",
-            PATH_MAX_LENGTH * sizeof(char));
+      fill_pathname_join(path, iconpath,
+            FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
       if (path_is_valid(path))
          task_push_image_load(path,
                video_driver_supports_rgba(), 0,
@@ -5996,7 +6002,6 @@ static void xmb_context_reset_background(const char *iconpath)
 
 #ifdef ORBIS
    /* To avoid weird behaviour on orbis with remote host */
-   RARCH_LOG("[XMB] after task\n");
    sleep(5);
 #endif
 }
@@ -6004,9 +6009,9 @@ static void xmb_context_reset_background(const char *iconpath)
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
       bool is_threaded, bool reinit_textures)
 {
-   char bg_file_path[PATH_MAX_LENGTH] = {0};
-   char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   iconpath[0]       = '\0';
+   char iconpath[PATH_MAX_LENGTH];
+   char bg_file_path[PATH_MAX_LENGTH];
+   iconpath[0]       = bg_file_path[0] = '\0';
 
    fill_pathname_application_special(bg_file_path,
          sizeof(bg_file_path), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
@@ -6018,8 +6023,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->bg_file_path = strdup(bg_file_path);
    }
 
-   fill_pathname_application_special(iconpath,
-         PATH_MAX_LENGTH * sizeof(char),
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
@@ -6068,8 +6072,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    }
 
    xmb_update_savestate_thumbnail_image(xmb);
-
-   free(iconpath);
 }
 
 static void xmb_context_reset(void *data, bool is_threaded)
@@ -6245,7 +6247,8 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       xmb_calculate_visible_range(xmb, height, selection_buf->size,
             (unsigned)xmb->selection_ptr_old, &first, &last);
 
-      xmb_list_deep_copy(selection_buf, xmb->selection_buf_old, first, last);
+      xmb_list_deep_copy(selection_buf,
+            &xmb->selection_buf_old, first, last);
 
       xmb->selection_ptr_old -= first;
       last                   -= first;
@@ -6354,6 +6357,14 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                menu_stack->list[stack_size - 1].type =
                   MENU_ADD_TAB;
                break;
+#if defined(HAVE_LIBRETRODB)
+            case XMB_SYSTEM_TAB_EXPLORE:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_EXPLORE_TAB;
+               break;
+#endif
             default:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU));

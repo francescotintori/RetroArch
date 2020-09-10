@@ -37,6 +37,10 @@ MSG_HASH(
    "Videor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Utforska"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importera innehåll"
    )
@@ -93,11 +97,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Skanna innehåll"
+   "Importera innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Skanna innehåll och lägg till i databasen."
+   "Skapa och uppdatera spellistor genom att skanna innehåll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -251,6 +255,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
    "Här finns en historik över de videor som visats."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Utforska"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "Bläddra bland allt innehåll som matchar databasen via ett kategoriserat sökgränssnitt."
    )
 
 /* Main Menu > Online Updater */
@@ -542,78 +554,270 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "Stöd för LibretroDB"
+   "LibretroDB-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Stöd för overlays"
+   "Overlays-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "Stöd för Command Interface"
+   "Command Interface-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Stöd för Network Command Interface"
+   "Network Command Interface-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "Stöd för Network Controller"
+   "Network Controller-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   "Stöd för Cocoa"
+   "Cocoa-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   "Stöd för PNG (RPNG)"
+   "PNG (RPNG)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   "Stöd för JPEG (RJPEG)"
+   "JPEG (RJPEG)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   "Stöd för BMP (RBMP)"
+   "BMP (RBMP)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   "Stöd för TGA (RTGA)"
+   "TGA (RTGA)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "Stöd för SDL 1.2"
+   "SDL 1.2-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "Stöd för SDL 2"
+   "SDL 2-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   "Stöd för Vulkan"
+   "Vulkan-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   "Stöd för Metal"
+   "Metal-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   "Stöd för OpenGL"
+   "OpenGL-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   "Stöd för OpenGL ES"
+   "OpenGL ES-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "Stöd för Threading"
+   "Threading-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
+   "KMS/EGL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
+   "udev-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
+   "OpenVG-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
+   "EGL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
+   "X11-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
+   "Wayland-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
+   "XVideo-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
+   "ALSA-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
+   "OSS-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
+   "OpenAL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
+   "OpenSL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
+   "RSound-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
+   "RoarAudio-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
+   "JACK-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
+   "PulseAudio-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+   "CoreAudio-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "CoreAudio V3-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+   "DirectSound-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "WASAPI-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+   "XAudio2-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+   "zlib-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+   "7zip-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+   "Dynamic Library-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
+   "Dynamisk inläsning av libretro-bibliotek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+   "Cg-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+   "GLSL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
+   "HLSL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
+   "SDL Image-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
+   "FFmpeg-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+   "mpv-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
+   "CoreText-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
+   "FreeType-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+   "STB TrueType-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
+   "Peer-to-peer-nätverksstöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
+   "Python-stöd (i shaders)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
+   "Video4Linux2-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+   "libusb-stöd"
    )
 
 /* Main Menu > Information > Database Manager */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
+   "Val av databas"
+   )
 
 /* Main Menu > Information > Database Manager > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   "Namn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   "Beskrivning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   "Utgivare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   "Utvecklare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   "Ursprung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   "TGDB-klassificering"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   "Famitsu Magazine-betyg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   "Edge Magazine-recension"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   "Edge Magazine-recension"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "Edge Magazine-nummer"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
    "Releasedatum månad"
@@ -652,15 +856,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "Stöd för analog kontroll"
+   "Analog input stöds"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "Stöd för rumble"
+   "Rumble stöds"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "Stöd för co-op"
+   "Co-op stöds"
    )
 
 /* Main Menu > Configuration File */
@@ -957,15 +1161,239 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
    "Bluetooth-drivrutin att använda."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "WiFi-drivrutin som ska användas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   "Positionering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Positioneringsdrivrutin att använda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   "Meny"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Menydrivrutin att använda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   "Inspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Inspelningsdrivrutin att använda."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Midi-drivrutin att använda."
+   )
 
 /* Settings > Video */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Skicka lågupplöst signal som passar CRT-bildskärmar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "Bild"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   "Ändra bildinställningar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Fullskärmsläge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Ändra inställningar för helskärmsläge."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Fönsterläge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Ändra inställningar för fönsterläge."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "Skalning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   "Ändra inställningar för videoskalning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Synkronisering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Ändra inställningar för videosynkronisering."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   "Stäng av skärmsläckare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "Förhindrar systemets skärmsläckare från att bli aktiv."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "Trådad bildrendering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "Förbättrar prestanda på bekostnad av latens och hackig videouppspelning. Använd bara om det är enda sättet att uppnå full hastighet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   "Infoga svart bildruta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Infogar en svart bildruta mellan de vanliga bildrutorna. Användbart för vissa skärmar med hög uppdateringsfrekvens för att undvika ghosting."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "GPU-screenshot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Skärmdump från GPUn, om det är tillgängligt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   "Bilinjär filtrering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Lägger till en liten oskärpa till bilden för att mjuka upp de hårda kanterna mellan pixlar. Detta har mycket liten inverkan på prestanda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Autoshader-fördröjning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Fördröjning (i ms) innan automatisk inladdning av shaders. Kan avhjälpa grafikproblem när du använder program för skärminspelning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "Videofilter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Applicerar ett CPU-drivet videofilter.\nOBS: Kan innebära en stor prestandakostnad. Vissa videofilter kanske bara fungerar för kärnor som använder 16- eller 32-bits färgdjup."
+   )
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Endast för CRT-skärmar. Försök att använda kärnan/spelets upplösning och uppdateringsfrekvens."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "CRT superupplösning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Växla mellan inbyggda och ultrabreda superupplösningar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Centrering längs X-axeln"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Cykla genom dessa alternativ om bilden inte är centrerad ordentligt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Porch-justering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Cykla genom dessa alternativ för att justera porch-inställningarna för att ändra bildstorleken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Använd anpassad uppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Använd en anpassad uppdateringshastighet som anges i konfigurationsfilen om det behövs."
+   )
 
 /* Settings > Video > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   "Skärmindex"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "Väljer vilken skärm som ska användas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   "Bildrotation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   "Tvingar en viss rotation av bilden på skärmen. Denna appliceras ovanpå eventuella rotationer som görs av kärnan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   "Skärmorientering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   "Tvingar en viss orientering av skärmen från operativsystemet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   "GPU-index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   "Vertikal uppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Din skärms vertikala uppdateringsfrekvens. Används för att beräkna en lämplig frekvens för inkommande ljud.\nOBS: Detta kommer att ignoreras om 'Trådad bildrendering' är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "Estimerad uppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   "Den exakt estimerade uppdateringsfrekvensen för skärmen i Hz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Bestäm uppdateringsfrekvens som rapporteras från skärmen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "Uppdateringsfrekvensen som rapporterats från bilddrivrutinen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Tvinga sRGB FBO-stödet att vara inaktivt. Vissa Intel OpenGL-drivrutiner i Windows har bildproblem när sRGB FBO-stödet är aktivt. Denna inställning kan avhjälpa detta."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
@@ -975,12 +1403,204 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   "Anpassad bildproportion (X-position)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Anpassad offset för visningsytans X-position. Dessa ignoreras om \"Integer-skalning\" är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Anpassad bildproportion (Y-position)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Anpassad offset för visningsytans Y-position. Dessa ignoreras om \"Integer-skalning\" är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Anpassad bildproportion (Bredd)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Anpassad offset för visningsytans bredd, som används om bildproportionerna är inställda på 'Anpassade bildproportioner'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Anpassad bildproportion (Höjd)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Anpassad offset för visningsytans höjd, som används om bildproportionerna är inställda på 'Anpassade bildproportioner'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Beskär overscan (Ladda om)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "Klipper bort några pixlar runt skärmens kant, som vanligen lämnas tomma av utvecklare och som ibland också innehåller skräppixlar. (Kräver omstart)"
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Vertikal synkronisering (Vsync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   "Synkroniserar bildsignalen från grafikkortet till bildskärmens uppdateringsfrekvens. Rekommenderas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "Swap-intervall för vertikal synkronisering (Vsync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Använder ett anpassat intervall för Vsync. Använd detta för att i praktiken halvera skärmens uppdateringsfrekvens."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "Adaptiv Vsync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "Vsync är aktiverat tills prestandan blir för dålig för att nå optimal uppdateringsfrekvens. Kan minimera hackande bild när prestandan är dålig, och vara mer energieffektivt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Bildrutefördröjning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Minskar latens på bekostnad av högre risk för hackande bild. Lägger till en fördröjning efter Vsync (i ms)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   "Hård GPU-synkronisering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   "Hårdsynkronisera CPU och GPU. Minskar latens på bekostnad av prestanda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   "Hård synkronisering av GPU-synkroniseringsbildrutor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   "Anger hur många bildrutor CPUn kör i förväg jämfört med GPUn när \"Hård GPU-synkronisering\" är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Synkronisera exakt till innehållets uppdateringsfrekvens (G-sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   "Ingen avvikelse från kärnans efterfrågade timing. Använd för skärmar med variabel uppdateringsfrekvens (G-sync, FreeSync, HDMI 2.1 VRR)."
+   )
 
 /* Settings > Audio */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   "Ljud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   "Ändra ljudinställningar."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+   "Ändra inställningarna för resamplern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "Synkronisering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "Ändra inställningar för ljudsynkronisering."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   "Ändra MIDI-inställningar."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   "Ändra inställningarna för ljudmixern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   "Menyljud"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   "Ljudlöst läge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "Aktivera/deaktivera ljudlöst läge."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   "Ljudlöst läge för mixern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "Aktivera/deaktivera ljudlöst läge för mixern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Ljudlöst läge vid snabbspolning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Aktivera ljudlöst läge automatiskt vid snabbspolning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   "Volymförstärkning (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   "Ljudvolym (i dB). 0 dB är normal volym, och ingen förstärkning appliceras."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   "Mixer-volymförstärkning (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   "Global ljudvolym för mixern (i dB). 0 dB är normal volym, och ingen förstärkning appliceras."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   "DSP-plugin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   "Ljud-plugin som bearbetar ljud innan det skickas till drivrutinen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI Exklusivt läge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "Tillåt WASAPI-drivrutinen att ta exklusiv kontroll över ljudenheten. Om detta är inaktiverat kommer den att använda delat läge istället."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   "WASAPI Float-format"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Använd floatformat för WASAPI-drivrutinen, om det stöds av din ljudenhet."
+   )
 
 /* Settings > Audio > Output */
 
@@ -1002,21 +1622,37 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Maximalt antal användare som stöds av RetroArch."
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   "Aktivera enheters vibration (för kärnor som stödjer det)"
+   )
 
 /* Settings > Input > Menu Controls */
 
 
 /* Settings > Input > Hotkey Binds */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   "Spola tillbaka nuvarande innehåll medan knappen trycks ned. Observera att \"Stöd för tillbakaspolning\" måste aktiveras."
+   )
 
 /* Settings > Input > Port # Binds */
 
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för savestates."
+   )
 
 /* Settings > Core */
 
@@ -1034,12 +1670,20 @@ MSG_HASH(
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Visa bara filer med filnamnstillägg som det finns stöd för."
+   )
 
 /* Settings > Frame Throttle */
 
 
 /* Settings > Frame Throttle > Rewind */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+   "Stöd för tillbakaspolning"
+   )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
@@ -1140,6 +1784,8 @@ MSG_HASH(
 /* Import content > Manual Scan */
 
 
+/* Explore tab */
+
 /* Playlist > Playlist Item */
 
 
@@ -1205,6 +1851,10 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
+   "Stöds inte"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -1238,12 +1888,28 @@ MSG_HASH(
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
+   "Slang-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
+   "OpenGL/Direct3D render-to-texture-stöd (multipass shaders)"
+   )
 
 /* Discord Status */
 
 
 /* Notifications */
 
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Kärnan har inget stöd för savestates."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Run-Ahead har inaktiverats eftersom denna kärna saknar stöd för savestates."
+   )
 
 /* Lakka */
 

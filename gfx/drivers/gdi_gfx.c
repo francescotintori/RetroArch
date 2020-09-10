@@ -43,6 +43,15 @@
 static HDC   win32_gdi_hdc;
 static void *dinput_gdi;
 
+struct bitmap_info {
+   BITMAPINFOHEADER header;
+   union {
+      RGBQUAD          colors;
+      DWORD            masks[3];
+   } u;
+};
+
+
 static void gfx_ctx_gdi_update_title(void)
 {
    char title[128];
@@ -82,7 +91,8 @@ static void gfx_ctx_gdi_get_video_size(
 
 static bool gfx_ctx_gdi_init(void)
 {
-   WNDCLASSEX wndclass     = {0};
+   WNDCLASSEX wndclass      = {0};
+   settings_t *settings     = config_get_ptr();
 
    if (g_win32_inited)
       return true;
@@ -90,7 +100,11 @@ static bool gfx_ctx_gdi_init(void)
    win32_window_reset();
    win32_monitor_init();
 
-   wndclass.lpfnWndProc   = WndProcGDI;
+   wndclass.lpfnWndProc   = wnd_proc_gdi_common;
+#ifdef HAVE_DINPUT
+   if (string_is_equal(settings->arrays.input_driver, "dinput"))
+      wndclass.lpfnWndProc   = wnd_proc_gdi_dinput;
+#endif
    if (!win32_window_init(&wndclass, true, NULL))
       return false;
    return true;
@@ -143,7 +157,7 @@ static void gfx_ctx_gdi_input_driver(
    /* winraw only available since XP */
    if (string_is_equal(settings->arrays.input_driver, "raw"))
    {
-      *input_data = input_winraw.init(settings->arrays.input_driver);
+      *input_data = input_driver_init_wrap(&input_winraw, settings->arrays.input_driver);
       if (*input_data)
       {
          *input     = &input_winraw;
@@ -155,7 +169,7 @@ static void gfx_ctx_gdi_input_driver(
 #endif
 
 #ifdef HAVE_DINPUT
-   dinput_gdi  = input_dinput.init(settings->arrays.input_driver);
+   dinput_gdi  = input_driver_init_wrap(&input_dinput, settings->arrays.input_driver);
    *input      = dinput_gdi ? &input_dinput : NULL;
 #else
    dinput_gdi  = NULL;
@@ -200,7 +214,6 @@ static void *gdi_gfx_init(const video_info_t *video,
 {
    unsigned full_x, full_y;
    void *ctx_data                       = NULL;
-   const gfx_ctx_driver_t *ctx_driver   = NULL;
    unsigned mode_width = 0, mode_height = 0;
    unsigned win_width  = 0, win_height  = 0;
    unsigned temp_width = 0, temp_height = 0;
@@ -297,17 +310,19 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   BITMAPINFO info;
-   unsigned mode_width       = 0;
-   unsigned mode_height      = 0;
-   const void *frame_to_copy = frame;
-   unsigned width            = 0;
-   unsigned height           = 0;
-   bool draw                 = true;
-   gdi_t *gdi                = (gdi_t*)data;
-   unsigned bits             = gdi->video_bits;
-   HWND hwnd                 = win32_get_window();
-   bool menu_is_alive        = video_info->menu_is_alive;
+   struct bitmap_info info;
+   unsigned mode_width              = 0;
+   unsigned mode_height             = 0;
+   const void *frame_to_copy        = frame;
+   unsigned width                   = 0;
+   unsigned height                  = 0;
+   bool draw                        = true;
+   gdi_t *gdi                       = (gdi_t*)data;
+   unsigned bits                    = gdi->video_bits;
+   HWND hwnd                        = win32_get_window();
+#ifdef HAVE_MENU
+   bool menu_is_alive               = video_info->menu_is_alive;
+#endif
 
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
@@ -333,7 +348,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gdi->menu_frame && video_info->menu_is_alive)
+#ifdef HAVE_MENU
+   if (gdi->menu_frame && menu_is_alive)
    {
       frame_to_copy = gdi->menu_frame;
       width         = gdi->menu_width;
@@ -342,6 +358,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       bits          = gdi->menu_bits;
    }
    else
+#endif
    {
       width         = gdi->video_width;
       height        = gdi->video_height;
@@ -353,8 +370,10 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          )
          draw = false;
 
-      if (video_info->menu_is_alive)
+#ifdef HAVE_MENU
+      if (menu_is_alive)
          draw = false;
+#endif
    }
 
    if (hwnd && !gdi->winDC)
@@ -400,22 +419,22 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    gdi->screen_width             = mode_width;
    gdi->screen_height            = mode_height;
 
-   info.bmiColors[0].rgbBlue     = 0;
-   info.bmiColors[0].rgbGreen    = 0;
-   info.bmiColors[0].rgbRed      = 0;
-   info.bmiColors[0].rgbReserved = 0;
+   info.u.colors.rgbBlue     = 0;
+   info.u.colors.rgbGreen    = 0;
+   info.u.colors.rgbRed      = 0;
+   info.u.colors.rgbReserved = 0;
 
-   info.bmiHeader.biSize         = sizeof(BITMAPINFOHEADER);
-   info.bmiHeader.biWidth        = pitch / (bits / 8);
-   info.bmiHeader.biHeight       = -height;
-   info.bmiHeader.biPlanes       = 1;
-   info.bmiHeader.biBitCount     = bits;
-   info.bmiHeader.biCompression  = 0;
-   info.bmiHeader.biSizeImage    = 0;
-   info.bmiHeader.biXPelsPerMeter= 0;
-   info.bmiHeader.biYPelsPerMeter= 0;
-   info.bmiHeader.biClrUsed      = 0;
-   info.bmiHeader.biClrImportant = 0;
+   info.header.biSize         = sizeof(BITMAPINFOHEADER);
+   info.header.biWidth        = pitch / (bits / 8);
+   info.header.biHeight       = -height;
+   info.header.biPlanes       = 1;
+   info.header.biBitCount     = bits;
+   info.header.biCompression  = 0;
+   info.header.biSizeImage    = 0;
+   info.header.biXPelsPerMeter= 0;
+   info.header.biYPelsPerMeter= 0;
+   info.header.biClrUsed      = 0;
+   info.header.biClrImportant = 0;
 
    if (bits == 16)
    {
@@ -435,37 +454,35 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          }
 
          frame_to_copy = gdi->temp_buf;
-         info.bmiHeader.biCompression = BI_RGB;
+         info.header.biCompression = BI_RGB;
       }
       else
       {
-         unsigned *masks = (unsigned*)info.bmiColors;
-
-         info.bmiHeader.biCompression = BI_BITFIELDS;
+         info.header.biCompression = BI_BITFIELDS;
 
          /* default 16-bit format on Windows is XRGB1555 */
          if (frame_to_copy == gdi->menu_frame)
          {
             /* map RGB444 color bits for RGUI */
-            masks[0] = 0xF000;
-            masks[1] = 0x0F00;
-            masks[2] = 0x00F0;
+            info.u.masks[0] = 0xF000;
+            info.u.masks[1] = 0x0F00;
+            info.u.masks[2] = 0x00F0;
          }
          else
          {
             /* map RGB565 color bits for core */
-            masks[0] = 0xF800;
-            masks[1] = 0x07E0;
-            masks[2] = 0x001F;
+            info.u.masks[0] = 0xF800;
+            info.u.masks[1] = 0x07E0;
+            info.u.masks[2] = 0x001F;
          }
       }
    }
    else
-      info.bmiHeader.biCompression = BI_RGB;
+      info.header.biCompression = BI_RGB;
 
    if (draw)
       StretchDIBits(gdi->memDC, 0, 0, width, height, 0, 0, width, height,
-            frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
+            frame_to_copy, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
 
    SelectObject(gdi->memDC, gdi->bmp_old);
 
@@ -477,10 +494,6 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    gfx_ctx_gdi_update_title();
 
    return true;
-}
-
-static void gdi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d)
-{
 }
 
 static bool gdi_gfx_alive(void *data)
@@ -505,24 +518,10 @@ static bool gdi_gfx_alive(void *data)
    return ret;
 }
 
-static bool gdi_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gdi_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool gdi_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
+static void gdi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool gdi_gfx_focus(void *data) { return true; }
+static bool gdi_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool gdi_gfx_has_windowed(void *data) { return true; }
 
 static void gdi_gfx_free(void *data)
 {
@@ -566,14 +565,7 @@ static void gdi_gfx_free(void *data)
 }
 
 static bool gdi_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static void gdi_set_texture_enable(
       void *data, bool state, bool full_screen)
@@ -665,7 +657,8 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void gdi_unload_texture(void *data, uintptr_t handle)
+static void gdi_unload_texture(void *data, 
+      bool threaded, uintptr_t handle)
 {
    struct gdi_texture *texture = (struct gdi_texture*)handle;
 
@@ -684,11 +677,26 @@ static void gdi_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
-static uint32_t gdi_get_flags(void *data)
-{
-   uint32_t             flags   = 0;
+static uint32_t gdi_get_flags(void *data) { return 0; }
 
-   return flags;
+static void gdi_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   win32_get_video_output_size(width, height);
+}
+
+static void gdi_get_video_output_prev(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_prev(&width, &height);
+}
+
+static void gdi_get_video_output_next(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_next(&width, &height);
 }
 
 static const video_poke_interface_t gdi_poke_interface = {
@@ -698,9 +706,9 @@ static const video_poke_interface_t gdi_poke_interface = {
    gdi_set_video_mode,
    win32_get_refresh_rate,
    NULL,
-   NULL,                         /* get_video_output_size */
-   NULL,                         /* get_video_output_prev */
-   NULL,                         /* get_video_output_next */
+   gdi_get_video_output_size,
+   gdi_get_video_output_prev,
+   gdi_get_video_output_next,
    NULL,
    NULL,
    NULL,
@@ -716,16 +724,9 @@ static const video_poke_interface_t gdi_poke_interface = {
 };
 
 static void gdi_gfx_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   (void)data;
-   *iface = &gdi_poke_interface;
-}
-
+      const video_poke_interface_t **iface) { *iface = &gdi_poke_interface; }
 static void gdi_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-}
+      unsigned viewport_height, bool force_full, bool allow_rotate) { }
 
 video_driver_t video_gdi = {
    gdi_gfx_init,

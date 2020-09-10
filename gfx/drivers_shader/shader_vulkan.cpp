@@ -48,9 +48,9 @@ static const uint32_t opaque_frag[] =
 struct Texture
 {
    vulkan_filter_chain_texture texture;
-   vulkan_filter_chain_filter filter;
-   vulkan_filter_chain_filter mip_filter;
-   vulkan_filter_chain_address address;
+   glslang_filter_chain_filter filter;
+   glslang_filter_chain_filter mip_filter;
+   glslang_filter_chain_address address;
 };
 
 class DeferredDisposer
@@ -104,7 +104,7 @@ class StaticTexture
             unsigned width, unsigned height,
             bool linear,
             bool mipmap,
-            vulkan_filter_chain_address address);
+            glslang_filter_chain_address address);
       ~StaticTexture();
 
       StaticTexture(StaticTexture&&) = delete;
@@ -184,7 +184,7 @@ struct CommonResources
    size_t ubo_offset            = 0;
    size_t ubo_alignment         = 1;
 
-   VkSampler samplers[VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_ADDRESS_COUNT];
+   VkSampler samplers[GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_ADDRESS_COUNT];
 
    vector<Texture> original_history;
    vector<Texture> fb_feedback;
@@ -246,15 +246,15 @@ class Pass
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_name(const char *name) { pass_name = name; }
       const string &get_name() const { return pass_name; }
-      vulkan_filter_chain_filter get_source_filter() const { 
+      glslang_filter_chain_filter get_source_filter() const { 
          return pass_info.source_filter; }
 
-      vulkan_filter_chain_filter get_mip_filter() const
+      glslang_filter_chain_filter get_mip_filter() const
       {
          return pass_info.mip_filter;
       }
 
-      vulkan_filter_chain_address get_address_mode() const
+      glslang_filter_chain_address get_address_mode() const
       {
          return pass_info.address;
       }
@@ -431,34 +431,6 @@ struct vulkan_filter_chain
       void update_history_info();
 };
 
-template <typename P>
-static bool vk_shader_set_unique_map(unordered_map<string, P> &m,
-      const string &name, const P &p)
-{
-   auto itr = m.find(name);
-   if (itr != end(m))
-   {
-      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n",
-            name.c_str());
-      return false;
-   }
-
-   m[name] = p;
-   return true;
-}
-
-static unsigned num_miplevels(unsigned width, unsigned height)
-{
-   unsigned size   = MAX(width, height);
-   unsigned levels = 0;
-   while (size)
-   {
-      levels++;
-      size >>= 1;
-   }
-   return levels;
-}
-
 static uint32_t find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
@@ -492,14 +464,6 @@ static void build_identity_matrix(float *data)
    data[13] = 0.0f;
    data[14] = 0.0f;
    data[15] = 1.0f;
-}
-
-static void build_vec4(float *data, unsigned width, unsigned height)
-{
-   data[0] = float(width);
-   data[1] = float(height);
-   data[2] = 1.0f / float(width);
-   data[3] = 1.0f / float(height);
 }
 
 static VkFormat glslang_format_to_vk(glslang_format fmt)
@@ -543,8 +507,9 @@ static VkFormat glslang_format_to_vk(glslang_format fmt)
       FMT(R32G32B32A32_SFLOAT);
 
       default:
-         return VK_FORMAT_UNDEFINED;
+         break;
    }
+   return VK_FORMAT_UNDEFINED;
 }
 
 static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
@@ -580,7 +545,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_info.extent.height        = image.height;
    image_info.extent.depth         = 1;
    image_info.mipLevels            = shader->mipmap 
-      ? num_miplevels(image.width, image.height) : 1;
+      ? glslang_num_miplevels(image.width, image.height) : 1;
    image_info.arrayLayers          = 1;
    image_info.samples              = VK_SAMPLE_COUNT_1_BIT;
    image_info.tiling               = VK_IMAGE_TILING_OPTIMAL;
@@ -721,7 +686,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
             tex, view, memory, move(buffer), image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             image_info.mipLevels > 1,
-            vk_wrap_to_address(shader->wrap)));
+            rarch_wrap_to_address(shader->wrap)));
 
 error:
    if (image.pixels)
@@ -1165,7 +1130,6 @@ bool vulkan_filter_chain::init_feedback()
    return true;
 }
 
-
 bool vulkan_filter_chain::init_alias()
 {
    unsigned i, j;
@@ -1180,22 +1144,22 @@ bool vulkan_filter_chain::init_alias()
 
       j = &passes[i] - passes.data();
 
-      if (!vk_shader_set_unique_map(
+      if (!slang_set_unique_map(
                common.texture_semantic_map, name,
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!vk_shader_set_unique_map(
+      if (!slang_set_unique_map(
                common.texture_semantic_uniform_map, name + "Size",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!vk_shader_set_unique_map(
+      if (!slang_set_unique_map(
                common.texture_semantic_map, name + "Feedback",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
 
-      if (!vk_shader_set_unique_map(
+      if (!slang_set_unique_map(
                common.texture_semantic_uniform_map, name + "FeedbackSize",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
@@ -1204,13 +1168,13 @@ bool vulkan_filter_chain::init_alias()
    for (i = 0; i < common.luts.size(); i++)
    {
       j = &common.luts[i] - common.luts.data();
-      if (!vk_shader_set_unique_map(
+      if (!slang_set_unique_map(
                common.texture_semantic_map,
                common.luts[i]->get_id(),
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
 
-      if (!vk_shader_set_unique_map(
+      if (!slang_set_unique_map(
                common.texture_semantic_uniform_map,
                common.luts[i]->get_id() + "Size",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
@@ -1381,7 +1345,7 @@ StaticTexture::StaticTexture(string id,
       unsigned width, unsigned height,
       bool linear,
       bool mipmap,
-      vulkan_filter_chain_address address)
+      glslang_filter_chain_address address)
    : device(device),
      image(image),
      view(view),
@@ -1389,8 +1353,8 @@ StaticTexture::StaticTexture(string id,
      buffer(move(buffer)),
      id(move(id))
 {
-   texture.filter         = VULKAN_FILTER_CHAIN_NEAREST;
-   texture.mip_filter     = VULKAN_FILTER_CHAIN_NEAREST;
+   texture.filter         = GLSLANG_FILTER_CHAIN_NEAREST;
+   texture.mip_filter     = GLSLANG_FILTER_CHAIN_NEAREST;
    texture.address        = address;
    texture.texture.image  = image;
    texture.texture.view   = view;
@@ -1399,9 +1363,9 @@ StaticTexture::StaticTexture(string id,
    texture.texture.height = height;
 
    if (linear)
-      texture.filter      = VULKAN_FILTER_CHAIN_LINEAR;
+      texture.filter      = GLSLANG_FILTER_CHAIN_LINEAR;
    if (mipmap && linear)
-      texture.mip_filter  = VULKAN_FILTER_CHAIN_LINEAR;
+      texture.mip_filter  = GLSLANG_FILTER_CHAIN_LINEAR;
 }
 
 StaticTexture::~StaticTexture()
@@ -1501,49 +1465,50 @@ void Pass::set_shader(VkShaderStageFlags stage,
 Size2D Pass::get_output_size(const Size2D &original,
       const Size2D &source) const
 {
-   float width, height;
+   float width  = 0.0f;
+   float height = 0.0f;
    switch (pass_info.scale_type_x)
    {
-      case VULKAN_FILTER_CHAIN_SCALE_ORIGINAL:
+      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
          width = float(original.width) * pass_info.scale_x;
          break;
 
-      case VULKAN_FILTER_CHAIN_SCALE_SOURCE:
+      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
          width = float(source.width) * pass_info.scale_x;
          break;
 
-      case VULKAN_FILTER_CHAIN_SCALE_VIEWPORT:
+      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
          width = current_viewport.width * pass_info.scale_x;
          break;
 
-      case VULKAN_FILTER_CHAIN_SCALE_ABSOLUTE:
+      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
          width = pass_info.scale_x;
          break;
 
       default:
-         width = 0.0f;
+         break;
    }
 
    switch (pass_info.scale_type_y)
    {
-      case VULKAN_FILTER_CHAIN_SCALE_ORIGINAL:
+      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
          height = float(original.height) * pass_info.scale_y;
          break;
 
-      case VULKAN_FILTER_CHAIN_SCALE_SOURCE:
+      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
          height = float(source.height) * pass_info.scale_y;
          break;
 
-      case VULKAN_FILTER_CHAIN_SCALE_VIEWPORT:
+      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
          height = current_viewport.height * pass_info.scale_y;
          break;
 
-      case VULKAN_FILTER_CHAIN_SCALE_ABSOLUTE:
+      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
          height = pass_info.scale_y;
          break;
 
       default:
-         height = 0.0f;
+         break;
    }
 
    return { unsigned(roundf(width)), unsigned(roundf(height)) };
@@ -1861,18 +1826,18 @@ CommonResources::CommonResources(VkDevice device,
    info.unnormalizedCoordinates = false;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 
-   for (i = 0; i < VULKAN_FILTER_CHAIN_COUNT; i++)
+   for (i = 0; i < GLSLANG_FILTER_CHAIN_COUNT; i++)
    {
       unsigned j;
 
-      switch (static_cast<vulkan_filter_chain_filter>(i))
+      switch (static_cast<glslang_filter_chain_filter>(i))
       {
-         case VULKAN_FILTER_CHAIN_LINEAR:
+         case GLSLANG_FILTER_CHAIN_LINEAR:
             info.magFilter = VK_FILTER_LINEAR;
             info.minFilter = VK_FILTER_LINEAR;
             break;
 
-         case VULKAN_FILTER_CHAIN_NEAREST:
+         case GLSLANG_FILTER_CHAIN_NEAREST:
             info.magFilter = VK_FILTER_NEAREST;
             info.minFilter = VK_FILTER_NEAREST;
             break;
@@ -1881,17 +1846,17 @@ CommonResources::CommonResources(VkDevice device,
             break;
       }
 
-      for (j = 0; j < VULKAN_FILTER_CHAIN_COUNT; j++)
+      for (j = 0; j < GLSLANG_FILTER_CHAIN_COUNT; j++)
       {
          unsigned k;
 
-         switch (static_cast<vulkan_filter_chain_filter>(j))
+         switch (static_cast<glslang_filter_chain_filter>(j))
          {
-            case VULKAN_FILTER_CHAIN_LINEAR:
+            case GLSLANG_FILTER_CHAIN_LINEAR:
                info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
                break;
 
-            case VULKAN_FILTER_CHAIN_NEAREST:
+            case GLSLANG_FILTER_CHAIN_NEAREST:
                info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
                break;
 
@@ -1899,29 +1864,29 @@ CommonResources::CommonResources(VkDevice device,
                break;
          }
 
-         for (k = 0; k < VULKAN_FILTER_CHAIN_ADDRESS_COUNT; k++)
+         for (k = 0; k < GLSLANG_FILTER_CHAIN_ADDRESS_COUNT; k++)
          {
             VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
 
-            switch (static_cast<vulkan_filter_chain_address>(k))
+            switch (static_cast<glslang_filter_chain_address>(k))
             {
-               case VULKAN_FILTER_CHAIN_ADDRESS_REPEAT:
+               case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
                   mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
                   break;
 
-               case VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
+               case GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
                   mode = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
                   break;
 
-               case VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
+               case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
                   mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
                   break;
 
-               case VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+               case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
                   mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
                   break;
 
-               case VULKAN_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE:
+               case GLSLANG_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE:
                   mode = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
                   break;
 
@@ -1996,7 +1961,8 @@ bool Pass::build()
 
    for (i = 0; i < parameters.size(); i++)
    {
-      if (!vk_shader_set_unique_map(semantic_map, parameters[i].id,
+      if (!slang_set_unique_map(
+               semantic_map, parameters[i].id,
                slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
          return false;
       j++;
@@ -2053,13 +2019,13 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       return;
 
    if (data && refl[index].uniform)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>(data + refl[index].ubo_offset),
             width,
             height);
 
    if (refl[index].push_constant)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2)),
             width,
             height);
@@ -2077,13 +2043,13 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    auto &refl = reflection.semantics[semantic];
 
    if (data && refl.uniform)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>(data + refl.ubo_offset),
             width,
             height);
 
    if (refl.push_constant)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>
             (push.buffer.data() + (refl.push_constant_offset >> 2)),
             width,
@@ -2409,7 +2375,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.extent.width      = size.width;
    info.extent.height     = size.height;
    info.extent.depth      = 1;
-   info.mipLevels         = min(max_levels, num_miplevels(size.width, size.height));
+   info.mipLevels         = min(max_levels,
+         glslang_num_miplevels(size.width, size.height));
    info.arrayLayers       = 1;
    info.samples           = VK_SAMPLE_COUNT_1_BIT;
    info.tiling            = VK_IMAGE_TILING_OPTIMAL;
@@ -2547,7 +2514,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_new(
 
 vulkan_filter_chain_t *vulkan_filter_chain_create_default(
       const struct vulkan_filter_chain_create_info *info,
-      vulkan_filter_chain_filter filter)
+      glslang_filter_chain_filter filter)
 {
    struct vulkan_filter_chain_pass_info pass_info;
    auto tmpinfo            = *info;
@@ -2558,14 +2525,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    if (!chain)
       return nullptr;
 
-   pass_info.scale_type_x  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
-   pass_info.scale_type_y  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_x       = 1.0f;
    pass_info.scale_y       = 1.0f;
    pass_info.rt_format     = tmpinfo.swapchain.format;
    pass_info.source_filter = filter;
-   pass_info.mip_filter    = VULKAN_FILTER_CHAIN_NEAREST;
-   pass_info.address       = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+   pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_NEAREST;
+   pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
    pass_info.max_levels    = 0;
 
    chain->set_pass_info(0, pass_info);
@@ -2585,7 +2552,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
 
 vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const struct vulkan_filter_chain_create_info *info,
-      const char *path, vulkan_filter_chain_filter filter)
+      const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
    config_file_t *conf            = NULL;
@@ -2623,14 +2590,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const video_shader_pass *next_pass =
          i + 1 < shader->passes ? &shader->pass[i + 1] : nullptr;
 
-      pass_info.scale_type_x  = VULKAN_FILTER_CHAIN_SCALE_ORIGINAL;
-      pass_info.scale_type_y  = VULKAN_FILTER_CHAIN_SCALE_ORIGINAL;
+      pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+      pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
       pass_info.scale_x       = 0.0f;
       pass_info.scale_y       = 0.0f;
       pass_info.rt_format     = VK_FORMAT_UNDEFINED;
-      pass_info.source_filter = VULKAN_FILTER_CHAIN_LINEAR;
-      pass_info.mip_filter    = VULKAN_FILTER_CHAIN_LINEAR;
-      pass_info.address       = VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
+      pass_info.source_filter = GLSLANG_FILTER_CHAIN_LINEAR;
+      pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_LINEAR;
+      pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
       if (!glslang_compile_shader(pass->source.path, &output))
@@ -2709,10 +2676,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       else
       {
          pass_info.source_filter =
-            pass->filter == RARCH_FILTER_LINEAR ? VULKAN_FILTER_CHAIN_LINEAR :
-            VULKAN_FILTER_CHAIN_NEAREST;
+            pass->filter == RARCH_FILTER_LINEAR 
+            ? GLSLANG_FILTER_CHAIN_LINEAR 
+            : GLSLANG_FILTER_CHAIN_NEAREST;
       }
-      pass_info.address    = vk_wrap_to_address(pass->wrap);
+      pass_info.address    = rarch_wrap_to_address(pass->wrap);
       pass_info.max_levels = 1;
 
       /* TODO: Expose max_levels in slangp.
@@ -2722,8 +2690,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
 
-      pass_info.mip_filter = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
-         ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
+      pass_info.mip_filter = 
+         (pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1)
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST;
 
       bool explicit_format         = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -2733,15 +2703,15 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       if (!pass->fbo.valid)
       {
-         pass_info.scale_type_x    = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
-         pass_info.scale_type_y    = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
+         pass_info.scale_type_x    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+         pass_info.scale_type_y    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
          pass_info.scale_x         = 1.0f;
          pass_info.scale_y         = 1.0f;
 
          if (i + 1 == shader->passes)
          {
-            pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
-            pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+            pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+            pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
             pass_info.rt_format    = tmpinfo.swapchain.format;
 
             if (explicit_format)
@@ -2774,17 +2744,17 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          {
             case RARCH_SCALE_INPUT:
                pass_info.scale_x      = pass->fbo.scale_x;
-               pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
                pass_info.scale_x      = float(pass->fbo.abs_x);
-               pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_ABSOLUTE;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
                pass_info.scale_x      = pass->fbo.scale_x;
-               pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }
 
@@ -2792,17 +2762,17 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          {
             case RARCH_SCALE_INPUT:
                pass_info.scale_y      = pass->fbo.scale_y;
-               pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
                pass_info.scale_y      = float(pass->fbo.abs_y);
-               pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_ABSOLUTE;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
                pass_info.scale_y      = pass->fbo.scale_y;
-               pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }
       }
@@ -2814,16 +2784,16 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    {
       struct vulkan_filter_chain_pass_info pass_info;
 
-      pass_info.scale_type_x  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
-      pass_info.scale_type_y  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
       pass_info.scale_x       = 1.0f;
       pass_info.scale_y       = 1.0f;
 
       pass_info.rt_format     = tmpinfo.swapchain.format;
 
       pass_info.source_filter = filter;
-      pass_info.mip_filter    = VULKAN_FILTER_CHAIN_NEAREST;
-      pass_info.address       = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+      pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_NEAREST;
+      pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
 
       pass_info.max_levels    = 0;
 

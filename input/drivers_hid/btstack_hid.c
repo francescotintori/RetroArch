@@ -625,7 +625,7 @@ joypad_connection_t *slots;
 
 typedef struct btstack_hid
 {
-   joypad_connection_t *slots;
+   void *empty;
 } btstack_hid_t;
 
 enum btpad_state
@@ -1358,7 +1358,7 @@ static void btstack_hid_joypad_get_buttons(void *data, unsigned port,
 {
   btstack_hid_t        *hid   = (btstack_hid_t*)data;
   if (hid)
-    pad_connection_get_buttons(&hid->slots[port], port, state);
+    pad_connection_get_buttons(&slots[port], port, state);
   else
     BIT256_CLEAR_ALL_PTR(state);
 }
@@ -1385,7 +1385,7 @@ static int16_t btstack_hid_joypad_axis(void *data,
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
       int16_t val = pad_connection_get_axis(
-            &hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+            &slots[port], port, AXIS_NEG_GET(joyaxis));
 
       if (val < 0)
          return val;
@@ -1393,7 +1393,7 @@ static int16_t btstack_hid_joypad_axis(void *data,
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
       int16_t val = pad_connection_get_axis(
-            &hid->slots[port], port, AXIS_POS_GET(joyaxis));
+            &slots[port], port, AXIS_POS_GET(joyaxis));
 
       if (val > 0)
          return val;
@@ -1411,9 +1411,11 @@ static int16_t btstack_hid_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
-   const struct dinput_joypad_data *pad = &g_pads[port];
+   btstack_hid_t         *hid            = (btstack_hid_t*)data;
+   uint16_t port_idx                     = joypad_info->joy_idx;
+   joypad_connection_t              *pad = &slots[port_idx];
 
-   if (!pad || !pad->joypad)
+   if (!pad)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -1425,11 +1427,10 @@ static int16_t btstack_hid_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && btstack_hid_joypad_button(data,
-               port, (uint16_t)joykey))
+            && btstack_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(btstack_hid_joypad_axis(data, port, joyaxis)) 
+            ((float)abs(btstack_hid_joypad_axis(data, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -1443,7 +1444,7 @@ static bool btstack_hid_joypad_rumble(void *data, unsigned pad,
    btstack_hid_t        *hid   = (btstack_hid_t*)data;
    if (!hid)
       return false;
-   return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
+   return pad_connection_rumble(&slots[pad], pad, effect, strength);
 }
 
 static void btstack_hid_free(const void *data)
@@ -1453,10 +1454,11 @@ static void btstack_hid_free(const void *data)
    if (!hid)
       return;
 
-   pad_connection_destroy(hid->slots);
+   pad_connection_destroy(slots);
    btpad_set_inquiry_state(true);
    btstack_set_poweron(false);
 
+   free(slots);
    if (hid)
       free(hid);
 }
@@ -1468,9 +1470,9 @@ static void *btstack_hid_init(void)
    if (!hid)
       goto error;
 
-   hid->slots = pad_connection_init(MAX_USERS);
+   slots = pad_connection_init(MAX_USERS);
 
-   if (!hid->slots)
+   if (!slots)
       goto error;
 
    btstack_set_poweron(false);

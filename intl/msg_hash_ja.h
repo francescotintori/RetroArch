@@ -41,6 +41,10 @@ MSG_HASH(
    "ネットプレイ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "エクスプローラー"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "コンテンツをインポート"
    )
@@ -76,6 +80,10 @@ MSG_HASH(
    "ディスクをロード"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "物理メディアディスクを読み込みます. まず, ディスクで使用するコア([コアをロード])を選択します."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    "ディスクをダンプ"
    )
@@ -93,11 +101,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "コンテンツをスキャン"
+   "コンテンツをインポート"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "コンテンツをスキャンしてデータベースに追加します. "
+   "コンテンツをスキャンしてプレイリストを作成, 更新します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -259,6 +267,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
    "以前再生した動画がここに表示されます."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "エクスプローラー"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "カテゴリ検索インターフェイスを介してデータベースに一致するすべてのコンテンツを参照します."
    )
 
 /* Main Menu > Online Updater */
@@ -1592,7 +1608,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "ビデオのつっかえのリスクが高くなりますが、遅延を減少します。垂直同期の後に遅延(ms)を追加します."
+   "ビデオのつっかえのリスクが高くなりますが、遅延を減少します. 垂直同期の後に遅延(ms)を追加します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -2693,16 +2709,8 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "フォルダ内でセーブファイルを並べ替え"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "使用したコアの名前に基づいて, フォルダ内でセーブファイルを並べ替えます."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "フォルダ内でステートセーブを並べ替え"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
@@ -2931,6 +2939,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
    "巻き戻しを有効"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   "巻き戻しフレーム数"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   "ステップごとに巻き戻すフレームです. 数値が大きいほど巻き戻し速度が上がります."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
@@ -3377,7 +3393,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "タッチスクリーンでのメニュー操作を有効にします." 
+   "タッチスクリーンでのメニュー操作を有効にします."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
@@ -3588,7 +3604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "メニューに[動画]タブを表示します。"
+   "メニューに[動画]タブを表示します. "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
@@ -4448,10 +4464,6 @@ MSG_HASH(
    "お気に入りのサイズ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "お気に入りプレイリストのエントリ数を制限します. 制限に達すると, 古いエントリが削除されるまで新しく追加できなくなります. 値を -1 に設定すると, '無制限' (99999) エントリが許可されます. 警告: 値を減らすと, 既存のエントリが削除されます!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "エントリの名前変更を許可"
    )
@@ -5097,7 +5109,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
-   "有効にすると, アーカイブ ファイル (.zip, .7zなど) が検索対象となります. スキャンのパフォーマンスに大きな影響を与える場合があります。"
+   "有効にすると, アーカイブ ファイル (.zip, .7zなど) が検索対象となります. スキャンのパフォーマンスに大きな影響を与える場合があります. "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
@@ -5130,6 +5142,28 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
    "選択されたコンテンツをスキャンします。"
+   )
+
+/* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "発売年"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "プレイヤー数"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "地域"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   "名前で検索..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   "すべて表示"
    )
 
 /* Playlist > Playlist Item */
@@ -5618,6 +5652,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "以前の値 -%u (%X ) に等しい"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "マッチした %u 件をリストに追加"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
@@ -5658,10 +5696,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
    "ハンドラ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
-   "メモリ検索サイズ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
@@ -6913,10 +6947,6 @@ MSG_HASH(
    "プレイリスト名を切り詰める"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "プレイリストからシステム名を削除します. たとえば, ｢Sony - PlayStation｣は｢PlayStation｣になります.(再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "名前切り詰め後にプレイリストを並び替える"
    )
@@ -6946,10 +6976,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
    "メニューのアイコン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "メニュー項目の左側に表示されるメニューアイコンを有効/無効にします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
@@ -7982,10 +8008,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "メイン設定ファイル"
    )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "ダウンロード"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
    "ネットプレイ設定"
@@ -8447,14 +8469,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "デバイスを有効なポートから切断してください"
-   )
-MSG_HASH(
-   MSG_DISK_CLOSED,
-   "ディスクを挿入しました"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "ディスクを排出しました"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -9069,14 +9083,6 @@ MSG_HASH(
    "Libretro API のバージョン"
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "取り出し"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "閉じる"
-   )
-MSG_HASH(
    MSG_FAILED,
    "失敗しました"
    )
@@ -9183,6 +9189,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "新しいマッチ数 = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "マッチした %u 件を追加しました"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "追加に失敗しました"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -9532,19 +9546,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
    "画面の明るさ"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "画面の明るさを増減します。"
-   )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "CPUオーバークロック"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "SwitchのCPUをオーバークロックします。"
    )
 #endif
 #ifdef HAVE_LAKKA

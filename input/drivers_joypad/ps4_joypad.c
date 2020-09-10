@@ -49,11 +49,13 @@
 #define	ORBISPAD_TOUCH_PAD	0x00100000
 #define	ORBISPAD_INTERCEPTED	0x80000000
 
-typedef struct SceUserServiceLoginUserIdList {
-	int32_t userId[SCE_USER_SERVICE_MAX_LOGIN_USERS];
+typedef struct SceUserServiceLoginUserIdList
+{
+   int32_t userId[SCE_USER_SERVICE_MAX_LOGIN_USERS];
 } SceUserServiceLoginUserIdList;
 
-int sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList* userIdList);
+int sceUserServiceGetLoginUserIdList(
+      SceUserServiceLoginUserIdList* userIdList);
 
 /*
  * Global var's
@@ -65,6 +67,7 @@ typedef struct
    bool connected;
 } ds_joypad_state;
 
+/* TODO/FIXME - static globals */
 static ds_joypad_state ds_joypad_states[PS4_MAX_ORBISPADS];
 static uint64_t pad_state[PS4_MAX_ORBISPADS];
 static int16_t analog_state[PS4_MAX_ORBISPADS][2][2];
@@ -150,8 +153,9 @@ static int16_t ps4_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port >= PS4_MAX_ORBISPADS)
+   if (port_idx >= PS4_MAX_ORBISPADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -161,7 +165,7 @@ static int16_t ps4_joypad_state(
          ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
       if (
                (uint16_t)joykey != NO_BTN 
-            && pad_state[port] & (UINT64_C(1) << (uint16_t)joykey)
+            && pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey)
          )
          ret |= ( 1 << i);
    }

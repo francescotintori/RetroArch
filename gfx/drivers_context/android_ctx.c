@@ -220,7 +220,7 @@ static void android_gfx_ctx_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *androidinput   = input_android.init(joypad_name);
+   void *androidinput   = input_driver_init_wrap(&input_android, joypad_name);
 
    *input               = androidinput ? &input_android : NULL;
    *input_data          = androidinput;
@@ -238,14 +238,9 @@ static bool android_gfx_ctx_bind_api(void *data,
    android_api = api;
 
 #ifdef HAVE_OPENGLES
-   version = major * 100 + minor;
-   if (version > 300)
-      return false;
-   if (version < 300)
-      g_es3 = false;
-   else if (version == 300)
+   version     = major * 100 + minor;
+   if (version >= 300)
       g_es3 = true;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
 #endif

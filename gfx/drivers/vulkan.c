@@ -781,8 +781,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 
    vk->filter_chain           = vulkan_filter_chain_create_default(
          &info,
-         vk->video.smooth ?
-         VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
+         vk->video.smooth 
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!vk->filter_chain)
    {
@@ -814,8 +815,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 
    vk->filter_chain           = vulkan_filter_chain_create_from_preset(
          &info, shader_path,
-         vk->video.smooth ?
-         VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
+         vk->video.smooth
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!vk->filter_chain)
    {
@@ -972,6 +974,8 @@ static void vulkan_free(void *data)
       if (vk->filter_chain)
          vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
 
+      if (vk->ctx_driver && vk->ctx_driver->destroy)
+         vk->ctx_driver->destroy(vk->ctx_data);
       video_context_driver_free();
    }
 
@@ -1164,15 +1168,16 @@ static void *vulkan_init(const video_info_t *video,
       input_driver_t **input,
       void **input_data)
 {
-   gfx_ctx_mode_t mode;
-   gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    unsigned win_width;
    unsigned win_height;
+   unsigned mode_width                = 0;
+   unsigned mode_height               = 0;
    int interval                       = 0;
    unsigned temp_width                = 0;
    unsigned temp_height               = 0;
    const gfx_ctx_driver_t *ctx_driver = NULL;
+   settings_t *settings               = config_get_ptr();
    vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
    if (!vk)
       return NULL;
@@ -1190,11 +1195,14 @@ static void *vulkan_init(const video_info_t *video,
    
    RARCH_LOG("[Vulkan]: Found vulkan context: %s\n", ctx_driver->ident);
 
-   video_context_driver_get_video_size(&mode);
-   full_x                             = mode.width;
-   full_y                             = mode.height;
-   mode.width                         = 0;
-   mode.height                        = 0;
+   if (vk->ctx_driver->get_video_size)
+      vk->ctx_driver->get_video_size(vk->ctx_data,
+            &mode_width, &mode_height);
+
+   full_x                             = mode_width;
+   full_y                             = mode_height;
+   mode_width                         = 0;
+   mode_height                        = 0;
 
    RARCH_LOG("[Vulkan]: Detecting screen resolution %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
@@ -1217,19 +1225,20 @@ static void *vulkan_init(const video_info_t *video,
       win_height = full_y;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
-
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !vk->ctx_driver->set_video_mode
+         || !vk->ctx_driver->set_video_mode(vk->ctx_data,
+            win_width, win_height, video->fullscreen))
    {
       RARCH_ERR("[Vulkan]: Failed to set video mode.\n");
       goto error;
    }
 
-   video_context_driver_get_video_size(&mode);
-   temp_width  = mode.width;
-   temp_height = mode.height;
+   if (vk->ctx_driver->get_video_size)
+      vk->ctx_driver->get_video_size(vk->ctx_data,
+            &mode_width, &mode_height);
+
+   temp_width  = mode_width;
+   temp_height = mode_height;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);
@@ -1270,9 +1279,13 @@ static void *vulkan_init(const video_info_t *video,
       goto error;
    }
 
-   inp.input      = input;
-   inp.input_data = input_data;
-   video_context_driver_input_driver(&inp);
+   if (vk->ctx_driver->input_driver)
+   {
+      const char *joypad_name = settings->arrays.input_joypad_driver;
+      vk->ctx_driver->input_driver(
+            vk->ctx_data, joypad_name,
+            input, input_data);
+   }
 
    if (video->font_enable)
       font_driver_init_osd(vk,
@@ -1456,21 +1469,15 @@ static void vulkan_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
-
-   (void)data;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
+   vk_t *vk               = (vk_t*)data;
+   if (vk->ctx_driver->set_video_mode)
+      vk->ctx_driver->set_video_mode(vk->ctx_data,
+            width, height, fullscreen);
 }
 
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   gfx_ctx_aspect_t aspect_data;
    int x                     = 0;
    int y                     = 0;
    float device_aspect       = (float)viewport_width / viewport_height;
@@ -1482,11 +1489,9 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    unsigned width            = vk->video_width;
    unsigned height           = vk->video_height;
 
-   aspect_data.aspect        = &device_aspect;
-   aspect_data.width         = viewport_width;
-   aspect_data.height        = viewport_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   if (vk->ctx_driver->translate_aspect)
+      device_aspect         = vk->ctx_driver->translate_aspect(
+            vk->ctx_data, viewport_width, viewport_height);
 
    if (video_scale_integer && !force_full)
    {
@@ -1698,7 +1703,8 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   vk->ctx_driver->swap_buffers(context_data);
+   if (vk->ctx_driver->swap_buffers)
+      vk->ctx_driver->swap_buffers(context_data);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -1726,8 +1732,12 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned video_height                         = video_info->height;
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
+#ifdef HAVE_MENU
    bool menu_is_alive                            = video_info->menu_is_alive;
-
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active                           = video_info->widgets_active;
+#endif
    unsigned frame_index                          =
       vk->context->current_frame_index;
    unsigned swapchain_index                      =
@@ -2062,7 +2072,7 @@ static bool vulkan_frame(void *data, const void *frame,
          font_driver_render_msg(vk, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
-      if (video_info->widgets_active)
+      if (widgets_active)
          gfx_widgets_frame(video_info);
 #endif
 
@@ -2075,7 +2085,8 @@ static bool vulkan_frame(void *data, const void *frame,
     */
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
-   if (backbuffer->image != VK_NULL_HANDLE &&
+   if (
+         backbuffer->image != VK_NULL_HANDLE &&
          vk->context->has_acquired_swapchain &&
          (vk->readback.pending || vk->readback.streamed))
    {
@@ -2224,7 +2235,8 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   vk->ctx_driver->swap_buffers(vk->ctx_data);
+   if (vk->ctx_driver->swap_buffers)
+      vk->ctx_driver->swap_buffers(vk->ctx_data);
 
    if (!vk->context->swap_interval_emulation_lock)
    {
@@ -2497,7 +2509,8 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void vulkan_unload_texture(void *data, uintptr_t handle)
+static void vulkan_unload_texture(void *data, 
+      bool threaded, uintptr_t handle)
 {
    vk_t *vk                         = (vk_t*)data;
    struct vk_texture *texture       = (struct vk_texture*)handle;
@@ -2540,6 +2553,33 @@ static uint32_t vulkan_get_flags(void *data)
    return flags;
 }
 
+static void vulkan_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_size)
+      return;
+   vk->ctx_driver->get_video_output_size(
+         vk->ctx_data,
+         width, height);
+}
+
+static void vulkan_get_video_output_prev(void *data)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_prev)
+      return;
+   vk->ctx_driver->get_video_output_prev(vk->ctx_data);
+}
+
+static void vulkan_get_video_output_next(void *data)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_next)
+      return;
+   vk->ctx_driver->get_video_output_next(vk->ctx_data);
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_flags,
    vulkan_load_texture,
@@ -2547,9 +2587,9 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_set_video_mode,
    vulkan_get_refresh_rate, /* get_refresh_rate */
    NULL,
-   NULL,
-   NULL,
-   NULL,
+   vulkan_get_video_output_size,
+   vulkan_get_video_output_prev,
+   vulkan_get_video_output_next,
    NULL,
    NULL,
    vulkan_set_aspect_ratio,
@@ -2920,29 +2960,37 @@ static const video_overlay_interface_t vulkan_overlay_interface = {
 };
 
 static void vulkan_get_overlay_interface(void *data,
-      const video_overlay_interface_t **iface)
-{
-   (void)data;
-   *iface = &vulkan_overlay_interface;
-}
+      const video_overlay_interface_t **iface) { *iface = &vulkan_overlay_interface; }
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-static bool vulkan_gfx_widgets_enabled(void *data)
+static bool vulkan_gfx_widgets_enabled(void *data) { return true; }
+#endif
+
+static bool vulkan_has_windowed(void *data)
 {
-   (void)data;
+   vk_t *vk        = (vk_t*)data;
+   if (vk && vk->ctx_driver)
+      return vk->ctx_driver->has_windowed;
+   return false;
+}
+
+static bool vulkan_focus(void *data)
+{
+   vk_t *vk        = (vk_t*)data;
+   if (vk && vk->ctx_driver && vk->ctx_driver->has_focus)
+      return vk->ctx_driver->has_focus(vk->ctx_data);
    return true;
 }
-#endif
 
 video_driver_t video_vulkan = {
    vulkan_init,
    vulkan_frame,
    vulkan_set_nonblock_state,
    vulkan_alive,
-   NULL,                         /* focus */
+   vulkan_focus,
    vulkan_suppress_screensaver,
-   NULL,                         /* has_windowed */
+   vulkan_has_windowed,
    vulkan_set_shader,
    vulkan_free,
    "vulkan",

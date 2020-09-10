@@ -42,15 +42,10 @@ typedef struct _sdl_joypad
 #endif
 } sdl_joypad_t;
 
-#ifdef HAVE_SDL2
-const int g_subsystem = SDL_INIT_GAMECONTROLLER;
-#else
-const int g_subsystem = SDL_INIT_JOYSTICK;
-#endif
-
+/* TODO/FIXME - static globals */
 static sdl_joypad_t sdl_pads[MAX_USERS];
 #ifdef HAVE_SDL2
-static bool g_has_haptic;
+static bool g_has_haptic                = false;
 #endif
 
 static const char *sdl_joypad_name(unsigned pad)
@@ -182,11 +177,16 @@ static void sdl_pad_connect(unsigned id)
       pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
    }
 
-   pad->haptic = g_has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
+   pad->haptic    = NULL;
+   
+   if (g_has_haptic)
+   {
+      pad->haptic = SDL_HapticOpenFromJoystick(pad->joypad);
 
-   if (g_has_haptic && !pad->haptic)
-      RARCH_WARN("[SDL]: Couldn't open haptic device of the joypad #%u: %s\n",
-                 id, SDL_GetError());
+      if (!pad->haptic)
+         RARCH_WARN("[SDL]: Couldn't open haptic device of the joypad #%u: %s\n",
+               id, SDL_GetError());
+   }
 
    pad->rumble_effect = -1;
 
@@ -236,25 +236,33 @@ static void sdl_pad_disconnect(unsigned id)
 static void sdl_joypad_destroy(void)
 {
    unsigned i;
+#ifdef HAVE_SDL2
+   int subsystem = SDL_INIT_GAMECONTROLLER;
+#else
+   int subsystem = SDL_INIT_JOYSTICK;
+#endif
    for (i = 0; i < MAX_USERS; i++)
       sdl_pad_disconnect(i);
 
-   SDL_QuitSubSystem(g_subsystem);
+   SDL_QuitSubSystem(subsystem);
    memset(sdl_pads, 0, sizeof(sdl_pads));
 }
 
 static bool sdl_joypad_init(void *data)
 {
    unsigned i, num_sticks;
-
-   (void)data;
+#ifdef HAVE_SDL2
+   int subsystem = SDL_INIT_GAMECONTROLLER;
+#else
+   int subsystem = SDL_INIT_JOYSTICK;
+#endif
 
    if (SDL_WasInit(0) == 0)
    {
-      if (SDL_Init(g_subsystem) < 0)
+      if (SDL_Init(subsystem) < 0)
          return false;
    }
-   else if (SDL_InitSubSystem(g_subsystem) < 0)
+   else if (SDL_InitSubSystem(subsystem) < 0)
       return false;
 
 #if HAVE_SDL2
@@ -379,11 +387,12 @@ static int16_t sdl_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
-   sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port];
+   uint16_t port_idx                    = joypad_info->joy_idx;
+   sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port_idx];
 
    if (!pad || !pad->joypad)
       return 0;
-   if (port >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -395,11 +404,11 @@ static int16_t sdl_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && sdl_joypad_button_state(pad, port, (uint16_t)joykey)
+            && sdl_joypad_button_state(pad, port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(sdl_joypad_axis_state(pad, port, joyaxis)) 
+            ((float)abs(sdl_joypad_axis_state(pad, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

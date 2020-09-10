@@ -37,13 +37,17 @@
 /* Required for task_push_core_backup() */
 #include "../core_backup.h"
 
+#if defined(HAVE_OVERLAY)
+#include "../input/input_overlay.h"
+#endif
+
 RETRO_BEGIN_DECLS
 
 typedef struct nbio_buf
 {
    void *buf;
-   unsigned bufsize;
    char *path;
+   unsigned bufsize;
 } nbio_buf_t;
 
 #ifdef HAVE_NETWORKING
@@ -96,6 +100,15 @@ void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
+#if defined(ANDROID)
+void *task_push_play_feature_delivery_core_install(
+      core_updater_list_t* core_list,
+      const char *filename,
+      bool mute);
+void task_push_play_feature_delivery_switch_installed_cores(
+      const char *path_dir_libretro,
+      const char *path_libretro_info);
+#endif
 
 bool task_push_pl_entry_thumbnail_download(
       const char *system,
@@ -158,11 +171,10 @@ bool task_push_overlay_load_default(
       retro_task_callback_t cb,
       const char *overlay_path,
       bool overlay_hide_in_menu,
+      bool overlay_hide_when_gamepad_connected,
       bool input_overlay_enable,
       float input_overlay_opacity,
-      float input_overlay_scale,
-      float input_overlay_center_x,
-      float input_overlay_center_y,
+      overlay_layout_t *layout,
       void *user_data);
 #endif
 

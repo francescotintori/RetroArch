@@ -145,8 +145,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path.config, user_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path_config, user_path,
+         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 #else
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
@@ -183,8 +183,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    /* history and main config */
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path.config, user_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path_config, user_path,
+         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 #endif
 
 #ifndef IS_SALAMANDER
@@ -577,7 +577,7 @@ static uint64_t frontend_psp_get_mem_total(void)
    return _newlib_heap_end - _newlib_heap_base;
 }
 
-static uint64_t frontend_psp_get_mem_used(void)
+static uint64_t frontend_psp_get_mem_free(void)
 {
    return _newlib_heap_end - _newlib_heap_cur;
 }
@@ -605,7 +605,7 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_parse_drive_list,
 #ifdef VITA
    frontend_psp_get_mem_total,
-   frontend_psp_get_mem_used,
+   frontend_psp_get_mem_free,
 #else
    NULL,                         /* get_mem_total */
    NULL,                         /* get_mem_free */

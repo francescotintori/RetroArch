@@ -31,17 +31,16 @@
 #define MAX_MFI_CONTROLLERS 4
 #endif
 
-static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][4];
-
-static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
-
-static NSMutableArray *mfiControllers;
-
 enum
 {
     GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
 };
+
+/* TODO/FIXME - static globals */
+static uint32_t mfi_buttons[MAX_USERS];
+static int16_t  mfi_axes[MAX_USERS][4];
+static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
+static NSMutableArray *mfiControllers;
 
 static bool apple_gamecontroller_available(void)
 {
@@ -389,8 +388,9 @@ static int16_t apple_gamecontroller_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -403,11 +403,11 @@ static int16_t apple_gamecontroller_joypad_state(
       if (     (uint16_t)joykey != NO_BTN 
             && !GET_HAT_DIR(i)
             && (i < 32)
-            && ((mfi_buttons[port] & (1 << i)) != 0)
+            && ((mfi_buttons[port_idx] & (1 << i)) != 0)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(apple_gamecontroller_joypad_axis(port, joyaxis)) 
+            ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

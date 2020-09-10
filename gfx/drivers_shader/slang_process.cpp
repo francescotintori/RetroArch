@@ -36,21 +36,6 @@ using namespace spirv_cross;
 #endif
 using namespace std;
 
-template <typename P>
-static bool set_unique_map(unordered_map<string, P>& m,
-      const string& name, const P& p)
-{
-   auto itr = m.find(name);
-   if (itr != end(m))
-   {
-      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n", name.c_str());
-      return false;
-   }
-
-   m[name] = p;
-   return true;
-}
-
 template <typename M, typename S>
 static string get_semantic_name(const unordered_map<string, M>* map,
       S semantic, unsigned index)
@@ -139,25 +124,25 @@ static bool slang_process_reflection(
 
       string name = shader_info->pass[i].alias;
 
-      if (!set_unique_map(
+      if (!slang_set_unique_map(
                 texture_semantic_map, name,
                 slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
          return false;
 
-      if (!set_unique_map(
+      if (!slang_set_unique_map(
                 texture_semantic_uniform_map, name + "Size",
                 slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
          return false;
 
-      if (!set_unique_map(
+      if (!slang_set_unique_map(
                 texture_semantic_map, name + "Feedback",
                 slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
          return false;
 
-      if (!set_unique_map(
+      if (!slang_set_unique_map(
                 texture_semantic_uniform_map, name + "FeedbackSize",
                 slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
@@ -166,13 +151,13 @@ static bool slang_process_reflection(
 
    for (i = 0; i < shader_info->luts; i++)
    {
-      if (!set_unique_map(
+      if (!slang_set_unique_map(
                 texture_semantic_map, shader_info->lut[i].id,
                 slang_texture_semantic_map{
                 SLANG_TEXTURE_SEMANTIC_USER, i }))
          return false;
 
-      if (!set_unique_map(
+      if (!slang_set_unique_map(
                 texture_semantic_uniform_map,
                 string(shader_info->lut[i].id) + "Size",
                 slang_texture_semantic_map{
@@ -184,7 +169,7 @@ static bool slang_process_reflection(
 
    for (i = 0; i < shader_info->num_parameters; i++)
    {
-      if (!set_unique_map(
+      if (!slang_set_unique_map(
                 uniform_semantic_map, shader_info->parameters[i].id,
                 slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
          return false;
@@ -443,26 +428,23 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader)
 {
    glslang_meta meta;
-   bool ret                  = false;
-   struct string_list *lines = string_list_new();
+   struct string_list lines = {0};
+   
+   if (!string_list_initialize(&lines))
+      goto error;
 
-   if (!lines)
-      goto end;
-
-   if (!glslang_read_shader_file(shader_path, lines, true))
-      goto end;
+   if (!glslang_read_shader_file(shader_path, &lines, true))
+      goto error;
    meta = glslang_meta{};
-   if (!glslang_parse_meta(lines, &meta))
-      goto end;
+   if (!glslang_parse_meta(&lines, &meta))
+      goto error;
 
-   ret = slang_preprocess_parse_parameters(meta, shader);
+   string_list_deinitialize(&lines);
+   return slang_preprocess_parse_parameters(meta, shader);
 
-end:
-
-   if (lines)
-      string_list_free(lines);
-
-   return ret;
+error:
+   string_list_deinitialize(&lines);
+   return false;
 }
 
 bool slang_process(

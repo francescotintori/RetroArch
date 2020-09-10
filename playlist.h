@@ -29,7 +29,7 @@
 RETRO_BEGIN_DECLS
 
 /* Default maximum playlist size */
-#define COLLECTION_SIZE 99999
+#define COLLECTION_SIZE 0x7FFFFFFF
 
 typedef struct content_playlist playlist_t;
 
@@ -99,7 +99,6 @@ struct playlist_entry
    char *runtime_str;
    char *last_played_str;
    struct string_list *subsystem_roms;
-   enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
@@ -112,22 +111,29 @@ struct playlist_entry
    unsigned last_played_hour;
    unsigned last_played_minute;
    unsigned last_played_second;
+   enum playlist_runtime_status runtime_status;
 };
 
 /* Holds all configuration parameters required
  * when initialising/saving playlists */
 typedef struct
 {
-   char path[PATH_MAX_LENGTH];
    size_t capacity;
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
+   bool autofix_paths;   
+   char path[PATH_MAX_LENGTH];
+   char base_content_directory[PATH_MAX_LENGTH];
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
 void playlist_config_set_path(playlist_config_t *config, const char *path);
+
+/* Convenience function: copies base content directory
+ * path to specified playlist configuration object */
+void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
 
 /* Creates a copy of the specified playlist configuration.
  * Returns false in the event of an error */
@@ -217,7 +223,8 @@ void playlist_delete_by_path(playlist_t *playlist,
 /**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
- * @path        : The path to be modified
+ * @is_core   : Set true if path to be resolved is a core file
+ * @path      : The path to be modified
  *
  * Resolves the path of an item, such as the content path or path to the core, to a format
  * appropriate for saving or loading depending on the @mode parameter
@@ -227,7 +234,7 @@ void playlist_delete_by_path(playlist_t *playlist,
  * install (iOS)
  **/
 void playlist_resolve_path(enum playlist_file_mode mode,
-      char *path, size_t len);
+      bool is_core, char *path, size_t len);
 
 /**
  * playlist_push:
@@ -344,6 +351,8 @@ core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry);
  * Returns NULL if playlist does not have a valid
  * default core association */
 core_info_t *playlist_get_default_core_info(playlist_t* playlist);
+
+void playlist_set_cached_external(playlist_t* pl);
 
 RETRO_END_DECLS
 

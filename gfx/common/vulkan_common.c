@@ -51,7 +51,6 @@ static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
-static struct string_list *vulkan_gpu_list = NULL;
 
 #if 0
 #define WSI_HARDENING_TEST
@@ -1007,10 +1006,10 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    /* Upload descriptors */
    {
-      unsigned i;
       VkDescriptorSet set;
       /* Upload UBO */
       struct vk_buffer_range range;
+      float *mvp_data_ptr          = NULL;
 
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                call->uniform_size, &range))
@@ -1038,8 +1037,11 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
       vk->tracker.view    = VK_NULL_HANDLE;
       vk->tracker.sampler = VK_NULL_HANDLE;
-      for (i = 0; i < 16; i++)
-         vk->tracker.mvp.data[i] = 0.0f;
+      for (
+              mvp_data_ptr = &vk->tracker.mvp.data[0]
+            ; mvp_data_ptr < vk->tracker.mvp.data + 16
+            ; mvp_data_ptr++)
+         *mvp_data_ptr = 0.0f;
    }
 
    /* VBO is already uploaded. */
@@ -1121,10 +1123,12 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
                6 * sizeof(struct vk_vertex), &range))
          return;
 
-      vulkan_write_quad_vbo((struct vk_vertex*)range.data,
-            0.0f, 0.0f, 1.0f, 1.0f,
-            0.0f, 0.0f, 1.0f, 1.0f,
-            &quad->color);
+      {
+         struct vk_vertex         *pv = (struct vk_vertex*)range.data;
+         const struct vk_color *color = &quad->color;
+
+         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, color);
+      }
 
       vkCmdBindVertexBuffers(vk->cmd, 0, 1,
             &range.buffer, &range.offset);
@@ -1576,10 +1580,10 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   if (vulkan_gpu_list)
-      string_list_free(vulkan_gpu_list);
+   if (vk->gpu_list)
+      string_list_free(vk->gpu_list);
 
-   vulkan_gpu_list = string_list_new();
+   vk->gpu_list = string_list_new();
 
    for (i = 0; i < gpu_count; i++)
    {
@@ -1590,10 +1594,10 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
       RARCH_LOG("[Vulkan]: Found GPU at index %d: %s\n", i, gpu_properties.deviceName);
 
-      string_list_append(vulkan_gpu_list, gpu_properties.deviceName, attr);
+      string_list_append(vk->gpu_list, gpu_properties.deviceName, attr);
    }
 
-   video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vulkan_gpu_list);
+   video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vk->gpu_list);
 
    if (0 <= gpu_index && gpu_index < (int)gpu_count)
    {
@@ -2651,10 +2655,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    }
 
    video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, NULL);
-   if (vulkan_gpu_list)
+   if (vk->gpu_list)
    {
-      string_list_free(vulkan_gpu_list);
-      vulkan_gpu_list = NULL;
+      string_list_free(vk->gpu_list);
+      vk->gpu_list = NULL;
    }
 }
 
@@ -2865,38 +2869,42 @@ retry:
    if (fence != VK_NULL_HANDLE)
       vkDestroyFence(vk->context.device, fence, NULL);
 
-   if (err == VK_NOT_READY || err == VK_TIMEOUT)
+   switch (err)
    {
-      /* Do nothing. */
-   }
-   else if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-   {
-      /* Throw away the old swapchain and try again. */
-      vulkan_destroy_swapchain(vk);
+      case VK_NOT_READY:
+      case VK_TIMEOUT:
+         /* Do nothing. */
+         break;
+      case VK_ERROR_OUT_OF_DATE_KHR:
+      case VK_SUBOPTIMAL_KHR:
+         /* Throw away the old swapchain and try again. */
+         vulkan_destroy_swapchain(vk);
 
-      if (is_retrying)
-      {
-         RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one. Have tried multiple times ...\n");
-         retro_sleep(10);
-      }
-      else
-         RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one.\n");
-      is_retrying = true;
-      vulkan_acquire_clear_fences(vk);
-      goto retry;
-   }
-   else if (err != VK_SUCCESS)
-   {
-      /* We are screwed, don't try anymore. Maybe it will work later. */
-      vulkan_destroy_swapchain(vk);
-      RARCH_ERR("[Vulkan]: Failed to acquire from swapchain (err = %d).\n",
-            (int)err);
-      if (err == VK_ERROR_SURFACE_LOST_KHR)
-         RARCH_ERR("[Vulkan]: Got VK_ERROR_SURFACE_LOST_KHR.\n");
-      /* Force driver to reset swapchain image handles. */
-      vk->context.invalid_swapchain = true;
-      vulkan_acquire_clear_fences(vk);
-      return;
+         if (is_retrying)
+         {
+            RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one. Have tried multiple times ...\n");
+            retro_sleep(10);
+         }
+         else
+            RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one.\n");
+         is_retrying = true;
+         vulkan_acquire_clear_fences(vk);
+         goto retry;
+      default:
+         if (err != VK_SUCCESS)
+         {
+            /* We are screwed, don't try anymore. Maybe it will work later. */
+            vulkan_destroy_swapchain(vk);
+            RARCH_ERR("[Vulkan]: Failed to acquire from swapchain (err = %d).\n",
+                  (int)err);
+            if (err == VK_ERROR_SURFACE_LOST_KHR)
+               RARCH_ERR("[Vulkan]: Got VK_ERROR_SURFACE_LOST_KHR.\n");
+            /* Force driver to reset swapchain image handles. */
+            vk->context.invalid_swapchain = true;
+            vulkan_acquire_clear_fences(vk);
+            return;
+         }
+         break;
    }
 
    index = vk->context.current_swapchain_index;

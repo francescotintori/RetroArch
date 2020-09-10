@@ -151,7 +151,7 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
    input_autoconfigure_connect(
          device_name,
          NULL,
-         driver_name,
+         "hid",
          idx,
          dev_vid,
          dev_pid
@@ -177,7 +177,7 @@ static void libusb_get_description(struct libusb_device *device,
    {
       const struct libusb_interface *inter = &config->interface[i];
 
-      for(j = 0; j < inter->num_altsetting; j++)
+      for (j = 0; j < inter->num_altsetting; j++)
       {
          const struct libusb_interface_descriptor *interdesc =
             &inter->altsetting[j];
@@ -188,7 +188,7 @@ static void libusb_get_description(struct libusb_device *device,
          {
             adapter->interface_number = (int)interdesc->bInterfaceNumber;
 
-            for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
+            for (k = 0; k < (int)interdesc->bNumEndpoints; k++)
             {
                const struct libusb_endpoint_descriptor *epdesc =
                   &interdesc->endpoint[k];
@@ -513,6 +513,7 @@ static int16_t libusb_hid_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -523,11 +524,10 @@ static int16_t libusb_hid_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && libusb_hid_joypad_button(data,
-               port, (uint16_t)joykey))
+            && libusb_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(libusb_hid_joypad_axis(data, port, joyaxis)) 
+            ((float)abs(libusb_hid_joypad_axis(data, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
